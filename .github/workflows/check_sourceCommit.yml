@@ -83,7 +83,7 @@ jobs:
           }
           
           $commitDistances.ToArray() | Export-Csv -Path ${{ env.file_distances_name }} -NoTypeInformation
-          $badFrontMatter | Out-File -FilePath ${{ file_no_sourceCommit_name }} -Encoding ascii
+          $badFrontMatter | Out-File -FilePath ${{ env.file_no_sourceCommit_name }} -Encoding ascii
 
       - name: Create artifact ${{ env.file_distances_name }}
         uses: actions/upload-artifact@v4.6.0
@@ -94,8 +94,8 @@ jobs:
       - name: Create artifact no_sourceCommit.txt
         uses: actions/upload-artifact@v4.6.0
         with:
-          name: ${{ file_no_sourceCommit_name }}
-          path: ${{ file_no_sourceCommit_name }}
+          name: ${{ env.file_no_sourceCommit_name }}
+          path: ${{ env.file_no_sourceCommit_name }}
 
   publish_distances:
     uses: cheeslide/mdn-translation-analytics/.github/workflows/publish.yml@main
@@ -107,4 +107,4 @@ jobs:
     uses: cheeslide/mdn-translation-analytics/.github/workflows/publish.yml@main
     needs: check_sourceCommit
     with:
-      filename: ${{ file_no_sourceCommit_name }}
+      filename: ${{ env.file_no_sourceCommit_name }}
