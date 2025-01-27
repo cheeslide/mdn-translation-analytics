@@ -5,6 +5,10 @@ on:
   # - cron: ""
   workflow_dispatch:
 
+env:
+  file_distances_name: "distances.csv"
+  file_no_sourceCommit_name: "no_sourceCommit.txt"
+
 jobs:
   check_sourceCommit:
     runs-on: windows-latest
@@ -78,29 +82,29 @@ jobs:
               }
           }
           
-          $commitDistances.ToArray() | Export-Csv -Path "distances.csv" -NoTypeInformation
-          $badFrontMatter | Out-File -FilePath "no_sourceCommit.txt" -Encoding ascii
+          $commitDistances.ToArray() | Export-Csv -Path ${{ env.file_distances_name }} -NoTypeInformation
+          $badFrontMatter | Out-File -FilePath ${{ file_no_sourceCommit_name }} -Encoding ascii
 
-      - name: Create artifact distances.csv
+      - name: Create artifact ${{ env.file_distances_name }}
         uses: actions/upload-artifact@v4.6.0
         with:
-          name: distances.csv
-          path: distances.csv
+          name: ${{ env.file_distances_name }}
+          path: ${{ env.file_distances_name }}
 
       - name: Create artifact no_sourceCommit.txt
         uses: actions/upload-artifact@v4.6.0
         with:
-          name: no_sourceCommit.txt
-          path: no_sourceCommit.txt
+          name: ${{ file_no_sourceCommit_name }}
+          path: ${{ file_no_sourceCommit_name }}
 
   publish_distances:
     uses: cheeslide/mdn-translation-analytics/.github/workflows/publish.yml@main
     needs: check_sourceCommit
     with:
-      filename: distances.txt
+      filename: ${{ env.file_distances_name }}
 
   publish_no_sourceCommit:
     uses: cheeslide/mdn-translation-analytics/.github/workflows/publish.yml@main
     needs: check_sourceCommit
     with:
-      filename: no_sourceCommit.txt
+      filename: ${{ file_no_sourceCommit_name }}
