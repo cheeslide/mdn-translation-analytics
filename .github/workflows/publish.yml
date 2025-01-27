@@ -20,16 +20,16 @@ jobs:
         run: |
           head -n 10 ${{ inputs.filename }}
           
-          json_data=$(jq -n --arg filename "${{ inputs.filename }}" --rawfile content  ${{ inputs.filename }} \
-            '{files: {($filename): {content: $content}}}')
-          printf "%s\n" "$json_data" | head -n 10 | cut -c 1-100
+          $(jq -n --arg filename "${{ inputs.filename }}" --rawfile content  ${{ inputs.filename }} \
+            '{files: {($filename): {content: $content}}}') >> json_data
+          head -n 10 json_data | cut -c 1-100
           
           response=$(curl -L \
             -X PATCH \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ secrets.ACCOUNT_TOKEN_GIST }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            -d "$json_data" \
+            -d "@json_data" \
             https://api.github.com/gists/${{ env.TARGET_GIST_ID }})
           
           # 检查 curl 的返回状态
