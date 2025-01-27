@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 env:
-  file_distances_name: "distances.csv"
-  file_no_sourceCommit_name: "no_sourceCommit.txt"
+  file_distances_name: "distances.csv" # when it, also change jobs.publish_distances.with.filename
+  file_no_sourceCommit_name: "no_sourceCommit.txt" #  when it, also change change jobs.publish_no_sourceCommit.filename
 
 jobs:
   check_sourceCommit:
@@ -97,20 +97,14 @@ jobs:
           name: ${{ env.file_no_sourceCommit_name }}
           path: ${{ env.file_no_sourceCommit_name }}
 
-      - name: Set outputs
-        id: set-outputs
-        run: |
-          echo "::set-output name=file_distances_name::${{ env.file_distances_name }}" 
-          echo "::set-output name=file_no_sourceCommit_name::${{ env.file_no_sourceCommit_name }}"
-
   publish_distances:
     uses: cheeslide/mdn-translation-analytics/.github/workflows/publish.yml@main
     needs: check_sourceCommit
     with:
-      filename: ${{ needs.check_sourceCommit.outputs.file_distances_name }} # 出于未知原因无法使用env
+      filename: ${{ env.file_distances_name }}
 
   publish_no_sourceCommit:
     uses: cheeslide/mdn-translation-analytics/.github/workflows/publish.yml@main
     needs: check_sourceCommit
     with:
-      filename: ${{ needs.check_sourceCommit.outputs.file_no_sourceCommit_name }}
+      filename: ${{ env.file_no_sourceCommit_name }}
