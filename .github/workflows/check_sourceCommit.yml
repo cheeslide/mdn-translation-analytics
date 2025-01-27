@@ -26,18 +26,16 @@ jobs:
           repository: 'mdn/content'
           path: 'content'
           fetch-depth: '0'
-          
-      - name: set var and env
-        run: |
-          $en_folder = Resolve-Path -Path "content\files\en-us"
-          $zh_folder = Resolve-Path -Path "translated-content\files\zh-cn"
-          $env:GIT_DIR = ".\content\.git"
-          $env:GIT_WORK_TREE = ".\content"
-          Write-Host $en_folder $zh_folder $env:GIT_DIR $env:GIT_WORK_TREE
 
       - name: run script
         run: |
-          $files = Get-ChildItem -Path $translation_folder -Recurse -File -Filter "*.md"
+          $en_folder = (Resolve-Path -Path "content\files\en-us").Path
+          $zh_folder = (Resolve-Path -Path "translated-content\files\zh-cn").Path
+          $env:GIT_DIR = ".\content\.git"
+          $env:GIT_WORK_TREE = ".\content"
+          Write-Host $en_folder $zh_folder $env:GIT_DIR $env:GIT_WORK_TREE
+          
+          $files = Get-ChildItem -Path $zh_folder -Recurse -File -Filter "*.md"
           Write-Host $files.Length
           $files | Select-Object -First 6 | Write-Host
           
