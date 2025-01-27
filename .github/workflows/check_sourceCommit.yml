@@ -61,13 +61,17 @@ jobs:
           }
           $commitDistances.ToArray() | Export-Csv -Path "distances.csv" -NoTypeInformation
           $badFrontMatter | Out-File -FilePath "no_sourceCommit.txt" -Encoding ascii
+          $env:commitDistances = GetContent -Path "distances.csv" -Raw -Encoding ascii
+          $env:badFrontMatter = GetContent -Path "no_sourceCommit.txt" -Raw -Encoding ascii
           
       - name: publish distances.csv to gist
         uses: ./.github/workflows/publish.yml
         with:
-          file: distances.csv
+          filename: distances.csv
+          content: ${{ env.commitDistances }}
 
       - name: publish no_sourceCommit.txt to gist
         uses: ./.github/workflows/publish.yml
         with:
-          file: no_sourceCommit.txt
+          filename: no_sourceCommit.txt
+          content: ${{ env.badFrontMatter }}
