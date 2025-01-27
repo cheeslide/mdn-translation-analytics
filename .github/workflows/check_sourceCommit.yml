@@ -11,13 +11,13 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Checkout mdn/translated-content
         uses: actions/checkout@v4
         with:
           repository: 'mdn/translated-content'
           path: 'translated-content'
-          
+            
       - name: Checkout mdn/content
         uses: actions/checkout@v4
         with:
@@ -39,9 +39,13 @@ jobs:
           $badFrontMatter = [System.Collections.Generic.List[String]]::new()
           
           $files = Get-ChildItem -Path $translation_folder -Recurse -File -Filter "*.md"
+          Write-Host $files.Length
+          $files | Select-Object -First 6 | Write-Host
+          
           $files = Select-Object -InputObject $files -ExpandProperty FullName
           Write-Host $files.Length
           $files | Select-Object -First 6 | Write-Host
+          
           ForEach-Object -InputObject $files {
               $file_start = -join (Get-Content -Path $_ -TotalCount 6)
               if($file_start -match "\s{1,}sourceCommit:\s?([0-9a-f]{40})"){
