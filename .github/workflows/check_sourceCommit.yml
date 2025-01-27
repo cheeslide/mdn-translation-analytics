@@ -11,7 +11,27 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
-
+      
+      - name: Get Latest Commit Hash of mdn/content
+        run: |
+          $en_folder
+          $commits = Invoke-WebRequest -Uri 'https://api.github.com/repos/mdn/content/commits?per_page=1' -Method Get | ConvertFrom-Json
+          $commits[0].sha
+      	
+      
+      - name: Cache node modules
+      id: cache-npm
+      uses: actions/cache@v3
+      env:
+        cache-name: cache-node-modules
+      with:
+        # npm cache files are stored in `~/.npm` on Linux/macOS
+        path: ~/.npm
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+      	${{ runner.os }}-build-${{ env.cache-name }}-
+      	${{ runner.os }}-build-
+      	${{ runner.os }}-
       - name: Checkout mdn/translated-content
         uses: actions/checkout@v4
         with:
@@ -66,24 +86,24 @@ jobs:
           $commitDistances.ToArray() | Export-Csv -Path "distances.csv" -NoTypeInformation
           $badFrontMatter | Out-File -FilePath "no_sourceCommit.txt" -Encoding ascii
 
-      - name: Create artifact distances.csv
-        uses: actions/upload-artifact@v4.6.0
-        with:
-          name: distances.csv
-          path: distances.csv
+      # - name: Create artifact distances.csv
+      #   uses: actions/upload-artifact@v4.6.0
+      #   with:
+      #     name: distances.csv
+      #     path: distances.csv
 
       - name: publish distances.csv to gist
-        uses: ./.github/workflows/publish.yml
+        uses: cheeslide/mdn-translation-analytics/.github/workflows/publish.yml
         with:
           filename: distances.csv
 
-      - name: Create artifact no_sourceCommit.txt
-        uses: actions/upload-artifact@v4.6.0
-        with:
-          name: no_sourceCommit.txt
-          path: no_sourceCommit.txt
+      # - name: Create artifact no_sourceCommit.txt
+      #   uses: actions/upload-artifact@v4.6.0
+      #   with:
+      #     name: no_sourceCommit.txt
+      #     path: no_sourceCommit.txt
 
       - name: publish no_sourceCommit.txt to gist
-        uses: ./.github/workflows/publish.yml
+        uses: cheeslide/mdn-translation-analytics/.github/workflows/publish.yml
         with:
           filename: no_sourceCommit.txt
