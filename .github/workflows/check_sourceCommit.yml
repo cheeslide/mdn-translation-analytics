@@ -31,6 +31,7 @@ jobs:
           $translation_folder = Resolve-Path -Path "translated-content\files"
           $env:GIT_DIR = ".\content\.git"
           $env:GIT_WORK_TREE = ".\content"
+          Write-Host $en_folder $translation_folder $env:GIT_DIR $env:GIT_WORK_TREE
 
       - name: run script
         run: |
