@@ -27,6 +27,17 @@ jobs:
           path: 'content'
           fetch-depth: '0'
 
+      - name: Debug Info
+        run: |
+          Write-Host 'pwd' -ForegroundColor blue
+          pwd
+          Write-Host 'ls' -ForegroundColor blue
+          ls
+          Write-Host 'ls ../' -ForegroundColor blue
+          ls ../
+          Write-Host '$env' -ForegroundColor blue
+          $env
+
       - name: run script
         run: |
           $en_folder = (Resolve-Path -Path "content\files\en-us").Path
