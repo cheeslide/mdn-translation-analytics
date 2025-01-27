@@ -1,0 +1,73 @@
+name: check l10n.sourceCommit
+
+on:
+  # schedule:
+  # - cron: ""
+  workflow_dispatch:
+
+jobs:
+  check_sourceCommit:
+    runs-on: windows-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Checkout mdn/translated-content
+        uses: actions/checkout@v4
+        with:
+          repository: 'mdn/translated-content'
+          path: 'translated-content'
+          
+      - name: Checkout mdn/content
+        uses: actions/checkout@v4
+        with:
+          repository: 'mdn/content'
+          path: 'content'
+          fetch-depth: '0'
+          
+      - name: set var and env
+        run: |
+          $en_folder = Resolve-Path -Path "content\files\en-us"
+          $translation_folder = Resolve-Path -Path "translated-content\files"
+          $env:GIT_DIR = ".\content\.git"
+          $env:GIT_WORK_TREE = ".\content"
+
+      - name: run script
+        run: |
+          $commitDistances = [System.Collections.Generic.List[PSObject]]::new()
+          $badFrontMatter = [System.Collections.Generic.List[String]]::new()
+          
+          Get-ChildItem -Path $translation_folder -Recurse -File -Filter "*.md" | `
+          Select-Object -ExpandProperty FullName | `
+          ForEach-Object {
+              $file_start = -join (Get-Content -Path $_ -TotalCount 6)
+              if($file_start -match "\s{1,}sourceCommit:\s?([0-9a-f]{40})"){
+                  $relative_path = $_ -replace [regex]::Escape($translation_folder), ""
+                  $en_file = Join-Path -Path $en_folder -ChildPath $relative_path
+                  $the_redundant_variable_to_remove_the_whitespace = $Matches[1]+"..HEAD"
+                  $commitDistances.add(
+                      [PSCustomObject]@{
+                          File = $_
+                          Distance = git rev-list --count $the_redundant_variable_to_remove_the_whitespace -- $en_file
+                          #FrontHash = $Matches[1]
+                          #CurrentHash = git log --format=%H -1 -- $en_file
+                      }
+                  )
+                  # Write-Host "$en_file"
+                  # Write-Host $the_redundant_variable_to_remove_the_whitespace
+              } else {
+                  $badFrontMatter.add($_)
+              }
+          }
+          $commitDistances.ToArray() | Export-Csv -Path "distances.csv" -NoTypeInformation
+          $badFrontMatter | Out-File -FilePath "no_sourceCommit.txt" -Encoding ascii
+          
+      - name: publish distances.csv to gist
+        uses: ./.github/workflows/publish.yml
+        with:
+          file: distances.csv
+
+      - name: publish no_sourceCommit.txt to gist
+        uses: ./.github/workflows/publish.yml
+        with:
+          file: no_sourceCommit.txt
