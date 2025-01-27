@@ -20,9 +20,9 @@ jobs:
         run: |
           head -n 10 ${{ inputs.filename }}
           
-          content = cat "${{ inputs.filename }}" | jq -sR .
+          cat "${{ inputs.filename }}" | jq -sR . >> content_temp
           
-          json_data=$(jq -n --arg filename "${{ inputs.filename }}" --arg content  "$content" \
+          json_data=$(jq -n --arg filename "${{ inputs.filename }}" --argfile content  "content_temp" \
             '{files: {($filename): {content: $content}}}')
           echo "$json_data" | cut -c 1-100 filename.txt
           
