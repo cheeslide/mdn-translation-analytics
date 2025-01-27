@@ -11,8 +11,6 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
-        with:
-          path: 'script'
 
       - name: Checkout mdn/translated-content
         uses: actions/checkout@v4
@@ -29,14 +27,7 @@ jobs:
 
       - name: Debug Info
         run: |
-          Write-Host 'pwd' -ForegroundColor blue
-          pwd
-          Write-Host 'ls' -ForegroundColor blue
           ls
-          Write-Host 'ls ../' -ForegroundColor blue
-          ls ../
-          Write-Host '$env' -ForegroundColor blue
-          $env
 
       - name: run script
         run: |
