@@ -20,11 +20,9 @@ jobs:
         run: |
           head -n 10 ${{ inputs.filename }}
           
-          cat "${{ inputs.filename }}" | jq -sR . >> content_temp
-          
-          json_data=$(jq -n --arg filename "${{ inputs.filename }}" --argfile content  "content_temp" \
+          json_data=$(jq -n --arg filename "${{ inputs.filename }}" --rawfile content  ${{ inputs.filename }} \
             '{files: {($filename): {content: $content}}}')
-          echo "$json_data" | cut -c 1-100 filename.txt
+          echo "$json_data" | head -n 10 | cut -c 1-100 filename.txt
           
           response=$(curl -L \
             -X PATCH \
