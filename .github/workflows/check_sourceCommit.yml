@@ -11,6 +11,8 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: 'script'
 
       - name: Checkout mdn/translated-content
         uses: actions/checkout@v4
@@ -28,57 +30,60 @@ jobs:
       - name: set var and env
         run: |
           $en_folder = Resolve-Path -Path "content\files\en-us"
-          $translation_folder = Resolve-Path -Path "translated-content\files"
+          $zh_folder = Resolve-Path -Path "translated-content\files\zh-cn"
           $env:GIT_DIR = ".\content\.git"
           $env:GIT_WORK_TREE = ".\content"
-          Write-Host $en_folder $translation_folder $env:GIT_DIR $env:GIT_WORK_TREE
+          Write-Host $en_folder $zh_folder $env:GIT_DIR $env:GIT_WORK_TREE
 
       - name: run script
         run: |
-          $commitDistances = [System.Collections.Generic.List[PSObject]]::new()
-          $badFrontMatter = [System.Collections.Generic.List[String]]::new()
-          
           $files = Get-ChildItem -Path $translation_folder -Recurse -File -Filter "*.md"
           Write-Host $files.Length
           $files | Select-Object -First 6 | Write-Host
           
-          $files = Select-Object -InputObject $files -ExpandProperty FullName
+          $files = $files | Select-Object -ExpandProperty FullName
           Write-Host $files.Length
           $files | Select-Object -First 6 | Write-Host
           
-          ForEach-Object -InputObject $files {
-              $file_start = -join (Get-Content -Path $_ -TotalCount 6)
-              if($file_start -match "\s{1,}sourceCommit:\s?([0-9a-f]{40})"){
-                  $relative_path = $_ -replace [regex]::Escape($translation_folder), ""
+          $commitDistances = [System.Collections.Generic.List[PSObject]]::new()
+          $badFrontMatter = [System.Collections.Generic.List[String]]::new()
+          
+          ForEach ($file in $files) {
+              $file_start = -join (Get-Content -Path $file -TotalCount 6)
+              if ($file_start -match "\s{1,}sourceCommit:\s?([0-9a-f]{40})") {
+                  $relative_path = $file -replace [regex]::Escape($translation_folder), ""
                   $en_file = Join-Path -Path $en_folder -ChildPath $relative_path
-                  $the_redundant_variable_to_remove_the_whitespace = $Matches[1]+"..HEAD"
-                  $commitDistances.add(
-                      [PSCustomObject]@{
-                          File = $_
-                          Distance = git rev-list --count $the_redundant_variable_to_remove_the_whitespace -- $en_file
-                          #FrontHash = $Matches[1]
-                          #CurrentHash = git log --format=%H -1 -- $en_file
-                      }
-                  )
-                  # Write-Host "$en_file"
-                  # Write-Host $the_redundant_variable_to_remove_the_whitespace
+                  $the_redundant_variable_to_remove_the_whitespace = $Matches[1] + "..HEAD"
+                  $commitDistances.add([PSCustomObject]@{
+                      File = $file
+                      Distance = git rev-list --count $the_redundant_variable_to_remove_the_whitespace -- $en_file
+                  })
               } else {
-                  $badFrontMatter.add($_)
+                  $badFrontMatter.add($file)
               }
           }
+          
           $commitDistances.ToArray() | Export-Csv -Path "distances.csv" -NoTypeInformation
           $badFrontMatter | Out-File -FilePath "no_sourceCommit.txt" -Encoding ascii
-          $env:commitDistances = GetContent -Path "distances.csv" -Raw -Encoding ascii
-          $env:badFrontMatter = GetContent -Path "no_sourceCommit.txt" -Raw -Encoding ascii
-          
+
+      - name: Create artifact distances.csv
+        uses: actions/upload-artifact@v4.6.0
+        with:
+          name: distances.csv
+          path: distances.csv
+
       - name: publish distances.csv to gist
         uses: ./.github/workflows/publish.yml
         with:
           filename: distances.csv
-          content: ${{ env.commitDistances }}
+
+      - name: Create artifact no_sourceCommit.txt
+        uses: actions/upload-artifact@v4.6.0
+        with:
+          name: no_sourceCommit.txt
+          path: no_sourceCommit.txt
 
       - name: publish no_sourceCommit.txt to gist
         uses: ./.github/workflows/publish.yml
         with:
           filename: no_sourceCommit.txt
-          content: ${{ env.badFrontMatter }}
