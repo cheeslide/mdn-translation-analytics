@@ -81,24 +81,26 @@ jobs:
           $commitDistances.ToArray() | Export-Csv -Path "distances.csv" -NoTypeInformation
           $badFrontMatter | Out-File -FilePath "no_sourceCommit.txt" -Encoding ascii
 
-      # - name: Create artifact distances.csv
-      #   uses: actions/upload-artifact@v4.6.0
-      #   with:
-      #     name: distances.csv
-      #     path: distances.csv
-
-      - name: publish distances.csv to gist
-        uses: cheeslide/mdn-translation-analytics/.github/workflows/publish.yml@main
+      - name: Create artifact distances.csv
+        uses: actions/upload-artifact@v4.6.0
         with:
-          filename: distances.csv
+          name: distances.csv
+          path: distances.csv
 
-      # - name: Create artifact no_sourceCommit.txt
-      #   uses: actions/upload-artifact@v4.6.0
-      #   with:
-      #     name: no_sourceCommit.txt
-      #     path: no_sourceCommit.txt
-
-      - name: publish no_sourceCommit.txt to gist
-        uses: cheeslide/mdn-translation-analytics/.github/workflows/publish.yml@main
+      - name: Create artifact no_sourceCommit.txt
+        uses: actions/upload-artifact@v4.6.0
         with:
-          filename: no_sourceCommit.txt
+          name: no_sourceCommit.txt
+          path: no_sourceCommit.txt
+
+  publish_distances:
+    uses: cheeslide/mdn-translation-analytics/.github/workflows/publish.yml@main
+    needs: check_sourceCommit
+    with:
+      filename: distances.txt
+
+  publish_no_sourceCommit:
+    uses: cheeslide/mdn-translation-analytics/.github/workflows/publish.yml@main
+    needs: check_sourceCommit
+    with:
+      filename: no_sourceCommit.txt
