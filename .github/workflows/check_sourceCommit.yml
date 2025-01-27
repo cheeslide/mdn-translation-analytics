@@ -12,26 +12,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Get Latest Commit Hash of mdn/content
+      - name: Get Latest Commit Hash of mdn/translated-content
         run: |
-          $en_folder
-          $commits = Invoke-WebRequest -Uri 'https://api.github.com/repos/mdn/content/commits?per_page=1' -Method Get | ConvertFrom-Json
-          $commits[0].sha
+          $commits = Invoke-WebRequest -Uri 'https://api.github.com/repos/mdn/translated-content/commits?per_page=1' -Method Get | ConvertFrom-Json
+          $latestHash = $commits[0].sha
+          Write-Host '$latestHash' $latestHash
+          echo "latest-hash=$latestHash" >> $env:GITHUB_ENV
       	
       
-      - name: Cache node modules
-      id: cache-npm
-      uses: actions/cache@v3
-      env:
-        cache-name: cache-node-modules
-      with:
-        # npm cache files are stored in `~/.npm` on Linux/macOS
-        path: ~/.npm
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-      	${{ runner.os }}-build-${{ env.cache-name }}-
-      	${{ runner.os }}-build-
-      	${{ runner.os }}-
+      - name: Cache mdn/translated-content
+        uses: actions/cache@v4.2.0
+        with:
+          path: 'translated-content'
+          key: translated-content ${{ env.latest-hash }}
+          restore-keys: |
+            translated-content
+         
       - name: Checkout mdn/translated-content
         uses: actions/checkout@v4
         with:
