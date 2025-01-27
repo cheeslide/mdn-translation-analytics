@@ -11,11 +11,11 @@ jobs:
   update-gist:
     runs-on: ubuntu-latest
     steps:
-      # - name: Download Artifact
-      #   uses: actions/download-artifact@v4.1.8
-      #   with:
-      #     name: ${{ inputs.filename }}
-      #     path: ${{ inputs.filename }}
+      - name: Download Artifact
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: ${{ inputs.filename }}
+          path: ${{ inputs.filename }}
       
       - name: Read file content
         id: read_file
