@@ -18,7 +18,6 @@ jobs:
           $latestHash = $commits[0].sha
           Write-Host '$latestHash' $latestHash
           echo "latest-hash=$latestHash" >> $env:GITHUB_ENV
-      	
       
       - name: Cache mdn/translated-content
         uses: actions/cache@v4.2.0
