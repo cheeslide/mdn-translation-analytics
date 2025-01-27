@@ -101,10 +101,10 @@ jobs:
     uses: cheeslide/mdn-translation-analytics/.github/workflows/publish.yml@main
     needs: check_sourceCommit
     with:
-      filename: ${{ env.file_distances_name }}
+      filename: "distances.csv"
 
   publish_no_sourceCommit:
     uses: cheeslide/mdn-translation-analytics/.github/workflows/publish.yml@main
     needs: check_sourceCommit
     with:
-      filename: ${{ env.file_no_sourceCommit_name }}
+      filename: "no_sourceCommit.txt"
