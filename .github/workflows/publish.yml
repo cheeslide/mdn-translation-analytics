@@ -6,14 +6,18 @@ on:
       filename:
         required: true
         type: string
-      content:
-        required: true
-        type: string
 
 jobs:
   update-gist:
     runs-on: ubuntu-latest
     steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: ${{ inputs.filename }}
+          path: ${{ inputs.filename }}
+
+    
       - name: Update Gist
         run: |
           curl -L \
