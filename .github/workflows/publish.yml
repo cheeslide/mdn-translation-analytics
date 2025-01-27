@@ -18,12 +18,13 @@ jobs:
 
       - name: Update Gist
         run: |
-          content=$(cat "${{ inputs.filename }}")
-          echo "$content" | cut -c 1-100
+          head -n 10 ${{ inputs.filename }}
           
-          # 使用 jq 处理 JSON 数据
-          json_data=$(jq -n --arg filename "${{ inputs.filename }}" --arg content "$content" \
+          content = cat "${{ inputs.filename }}" | jq -sR .
+          
+          json_data=$(jq -n --arg filename "${{ inputs.filename }}" --arg content  "$content" \
             '{files: {($filename): {content: $content}}}')
+          echo "$json_data" | cut -c 1-100 filename.txt
           
           response=$(curl -L \
             -X PATCH \
