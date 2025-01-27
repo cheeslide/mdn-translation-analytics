@@ -38,9 +38,11 @@ jobs:
           $commitDistances = [System.Collections.Generic.List[PSObject]]::new()
           $badFrontMatter = [System.Collections.Generic.List[String]]::new()
           
-          Get-ChildItem -Path $translation_folder -Recurse -File -Filter "*.md" | `
-          Select-Object -ExpandProperty FullName | `
-          ForEach-Object {
+          $files = Get-ChildItem -Path $translation_folder -Recurse -File -Filter "*.md"
+          $files = Select-Object -InputObject $files -ExpandProperty FullName
+          Write-Host $files.Length
+          $files | Select-Object -First 6 | Write-Host
+          ForEach-Object -InputObject $files {
               $file_start = -join (Get-Content -Path $_ -TotalCount 6)
               if($file_start -match "\s{1,}sourceCommit:\s?([0-9a-f]{40})"){
                   $relative_path = $_ -replace [regex]::Escape($translation_folder), ""
