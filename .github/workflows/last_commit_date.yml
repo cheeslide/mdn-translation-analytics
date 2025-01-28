@@ -1,0 +1,48 @@
+name: check last commit date
+
+on:
+  # schedule:
+  # - cron: ""
+  workflow_dispatch:
+
+env:
+  outfile_name: "last_commit_date.csv" # when change it, also change jobs.publish_untranslated.with.filename
+
+jobs:
+  check_last_commit_date:
+    runs-on: windows-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: cache and checkout mdn/translated-content (depth 0)
+        uses: ./.github/actions/cached-checkout
+        with:
+          repo: mdn/translated-content
+          path: translated-content
+          fetch-depth: 0
+
+      - run: ls -Depth 1
+
+      - name: run script
+        run: |
+          $logFile = "md_logs.txt"
+          $targetFiles = "current_files.txt"
+          git log --format=%ad --date=short --name-only | Out-File -FilePath $logFile -Encoding ascii
+          git ls-files *.md | Out-File -FilePath $targetFiles -Encoding ascii
+          python get_last_commit_dates.py $logFile ${{env.outfile_name}} $targetFiles
+
+      - name: Create artifact ${{ env.outfile_name }}
+        uses: actions/upload-artifact@v4.6.0
+        with:
+          name: ${{ env.outfile_name }}
+          path: ${{ env.outfile_name }}
+          retention-days: 14
+
+  publish:
+    uses: ./.github/workflows/publish.yml
+    needs: check_last_commit_date
+    with:
+      filename: "last_commit_date.csv"
+    secrets:
+      ACCOUNT_TOKEN_GIST: ${{ secrets.ACCOUNT_TOKEN_GIST }}
