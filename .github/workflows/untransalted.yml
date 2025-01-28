@@ -1,0 +1,62 @@
+name: check untranslated
+
+on:
+  # schedule:
+  # - cron: ""
+  workflow_dispatch:
+
+env:
+  file_untranslated_name: "untranslated.csv" # when it, also change jobs.publish_untranslated.with.filename
+
+jobs:
+  check_untranslated:
+    runs-on: windows-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: cache and checkout mdn/translated-content
+        uses: ./.github/actions/cached-checkout
+        with:
+          repo: mdn/translated-content
+          path: translated-content
+
+      - name: cache and checkout mdn/content
+        uses: ./.github/actions/cached-checkout
+        with:
+          repo: mdn/content
+          path: content
+
+      - run: ls -Depth 1
+
+      - name: run script
+        env:
+          output_file: ${{ env.file_untranslated_name }}
+        run: |
+          $en_folder = (Resolve-Path -Path "content\files\en-us").Path
+          $zh_folder = (Resolve-Path -Path "translated-content\files\zh-cn").Path
+          
+          Get-ChildItem -Path $en_folder -Recurse -File -Filter "*.md" | `
+          Select-Object -ExpandProperty FullName | `
+          ForEach-Object {
+              $relative_path = $_ -replace [regex]::Escape($en_folder), ""
+              $zh_file = Join-Path -Path $zh_folder -ChildPath $relative_path
+              if (!(Test-Path -Path $zh_file)) {
+                  $relative_path
+              }
+          } | Out-File -FilePath $output_file -Encoding UTF8
+
+      - name: Create artifact ${{ env.file_untranslated_name }}
+        uses: actions/upload-artifact@v4.6.0
+        with:
+          name: ${{ env.file_untranslated_name }}
+          path: ${{ env.file_untranslated_name }}
+          retention-days: 14
+
+  publish_untranslated:
+    uses: ./.github/workflows/publish.yml
+    needs: check_untranslated
+    with:
+      filename: "untranslated.csv"
+    secrets:
+      ACCOUNT_TOKEN_GIST: ${{ secrets.ACCOUNT_TOKEN_GIST }}
