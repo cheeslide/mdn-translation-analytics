@@ -7,12 +7,14 @@ inputs:
     required: true
   ACCOUNT_TOKEN_GIST:
     required: true
+  TARGET_GIST_ID:
+    required: true
 
 runs:
   using: "composite"
-  shell: bash
   steps:
     - name: Update Gist
+      shell: bash
       run: |
         head -n 10 ${{ inputs.filename }}
         
@@ -28,7 +30,7 @@ runs:
           -d "@json_data" \
           -w "%{http_code}" \
           -o response_body.txt \
-          "https://api.github.com/gists/${{ vars.TARGET_GIST_ID }}" )
+          "https://api.github.com/gists/${{ inputs.TARGET_GIST_ID }}" )
         
         # 检查 curl 的返回状态
         if [ "$response" -ne 200 ]; then
