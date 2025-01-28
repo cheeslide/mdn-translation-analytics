@@ -1,0 +1,39 @@
+name: publish to gist
+description: publish to gist
+
+inputs:
+  filename:
+    description: file to be publish. must at current directory.
+    required: true
+  ACCOUNT_TOKEN_GIST:
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Update Gist
+      run: |
+        head -n 10 ${{ inputs.filename }}
+        
+        jq -n --arg filename "${{ inputs.filename }}" --rawfile content  "${{ inputs.filename }}" \
+          '{files: {($filename): {content: $content}}}' >> json_data
+        head -n 10 json_data | cut -c 1-100
+        
+        response=$(curl -L \
+          -X PATCH \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{secret.ACCOUNT_TOKEN_GIST}}" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          -d "@json_data" \
+          -w "%{http_code}" \
+          -o response_body.txt \
+          "https://api.github.com/gists/${{ vars.TARGET_GIST_ID }}" )
+        
+        # 检查 curl 的返回状态
+        if [ "$response" -ne 200 ]; then
+          echo "Error: Failed to update Gist."
+          cat response_body.txt  # 输出响应体
+          exit 1
+        fi
+        
+        echo "Gist updated successfully: $response"
