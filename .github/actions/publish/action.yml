@@ -43,3 +43,5 @@ runs:
         fi
         
         echo "Gist updated successfully: $response"
+        rm response_body.txt json_data
+        
