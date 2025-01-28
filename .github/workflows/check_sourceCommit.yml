@@ -98,13 +98,15 @@ jobs:
           path: ${{ env.file_no_sourceCommit_name }}
 
   publish_distances:
-    uses: cheeslide/mdn-translation-analytics/.github/workflows/publish.yml@main
+    uses: ./.github/workflows/publish.yml
     needs: check_sourceCommit
     with:
       filename: "distances.csv"
 
   publish_no_sourceCommit:
-    uses: cheeslide/mdn-translation-analytics/.github/workflows/publish.yml@main
+    uses: ./.github/workflows/publish.yml
     needs: check_sourceCommit
     with:
       filename: "no_sourceCommit.txt"
+    secrets:
+      ACCOUNT_TOKEN_GIST: ${{ secrets.ACCOUNT_TOKEN_GIST }}
