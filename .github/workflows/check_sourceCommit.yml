@@ -15,34 +15,19 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Get Latest Commit Hash of mdn/translated-content
-        run: |
-          $commits = Invoke-WebRequest -Uri 'https://api.github.com/repos/mdn/translated-content/commits?per_page=1' -Method Get | ConvertFrom-Json
-          $latestHash = $commits[0].sha
-          Write-Host '$latestHash' $latestHash
-          echo "latest-hash=$latestHash" >> $env:GITHUB_ENV
-      
-      - name: Cache mdn/translated-content
-        uses: actions/cache@v4.2.0
+
+      - name: cache and checkout mdn/translated-content
+        uses: ./.github/actions/cached-checkout
         with:
-          path: 'translated-content'
-          key: translated-content ${{ env.latest-hash }}
-          restore-keys: |
-            translated-content
-         
-      - name: Checkout mdn/translated-content
-        uses: actions/checkout@v4
+          repo: mdn/translated-content
+          path: translated-content
+
+      - name: cache and checkout mdn/content (depth 0)
+        uses: ./.github/actions/cached-checkout
         with:
-          repository: 'mdn/translated-content'
-          path: 'translated-content'
-            
-      - name: Checkout mdn/content
-        uses: actions/checkout@v4
-        with:
-          repository: 'mdn/content'
-          path: 'content'
-          fetch-depth: '0'
+          repo: mdn/content
+          path: translated-content
+          fetch-depth: 0
 
       - name: Debug Info
         run: |
@@ -90,12 +75,14 @@ jobs:
         with:
           name: ${{ env.file_distances_name }}
           path: ${{ env.file_distances_name }}
+          retention-days: 14
 
       - name: Create artifact no_sourceCommit.txt
         uses: actions/upload-artifact@v4.6.0
         with:
           name: ${{ env.file_no_sourceCommit_name }}
           path: ${{ env.file_no_sourceCommit_name }}
+          retention-days: 14
 
   publish_distances:
     uses: ./.github/workflows/publish.yml
