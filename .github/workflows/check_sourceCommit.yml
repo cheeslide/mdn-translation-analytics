@@ -102,6 +102,8 @@ jobs:
     needs: check_sourceCommit
     with:
       filename: "distances.csv"
+    secrets:
+      ACCOUNT_TOKEN_GIST: ${{ secrets.ACCOUNT_TOKEN_GIST }}
 
   publish_no_sourceCommit:
     uses: ./.github/workflows/publish.yml
