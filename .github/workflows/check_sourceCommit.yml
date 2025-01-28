@@ -35,7 +35,9 @@ jobs:
         id: cache
         uses: actions/cache@v4
         with:
-          path: ${{ env.file_distances_name }}, ${{ env.file_no_sourceCommit_name }}
+          path: |
+            ${{ env.file_distances_name }}
+            ${{ env.file_no_sourceCommit_name }}
           key: check_sourceCommit output ${{ steps.get-translated-content.outputs.latest-hash }}~${{ steps.get-content.outputs.latest-hash }}
 
       - if: steps.cache.outputs.cache-hit != 'true'
