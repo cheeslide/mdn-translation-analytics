@@ -6,6 +6,9 @@ on:
       filename:
         required: true
         type: string
+    secrets:
+      ACCOUNT_TOKEN_GIST:
+        required: true
 
 jobs:
   update-gist:
