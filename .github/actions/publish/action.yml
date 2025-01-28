@@ -10,6 +10,7 @@ inputs:
 
 runs:
   using: "composite"
+  shell: bash
   steps:
     - name: Update Gist
       run: |
@@ -22,7 +23,7 @@ runs:
         response=$(curl -L \
           -X PATCH \
           -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer ${{secret.ACCOUNT_TOKEN_GIST}}" \
+          -H "Authorization: Bearer ${{inputs.ACCOUNT_TOKEN_GIST}}" \
           -H "X-GitHub-Api-Version: 2022-11-28" \
           -d "@json_data" \
           -w "%{http_code}" \
