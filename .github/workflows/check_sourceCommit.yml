@@ -17,19 +17,29 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: cache and checkout mdn/translated-content
+        id: get-translated-content
         uses: ./.github/actions/cached-checkout
         with:
           repo: mdn/translated-content
           path: translated-content
 
       - name: cache and checkout mdn/content (depth 0)
+        id: get-content
         uses: ./.github/actions/cached-checkout
         with:
           repo: mdn/content
           path: content
           fetch-depth: 0
 
-      - name: run script
+      - name: Cache ${{ env.file_distances_name }}, ${{ env.file_no_sourceCommit_name }}
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.file_distances_name }}, ${{ env.file_no_sourceCommit_name }}
+          key: check_sourceCommit output ${{ steps.get-translated-content.outputs.latest-hash }}~${{ steps.get-content.outputs.latest-hash }}
+
+      - if: steps.cache.outputs.cache-hit != 'true'
+        name: run script
         run: |
           $en_folder = (Resolve-Path -Path "content\files\en-us").Path
           $zh_folder = (Resolve-Path -Path "translated-content\files\zh-cn").Path
@@ -65,14 +75,16 @@ jobs:
           $commitDistances.ToArray() | Export-Csv -Path ${{ env.file_distances_name }} -NoTypeInformation
           $badFrontMatter | Out-File -FilePath ${{ env.file_no_sourceCommit_name }} -Encoding ascii
 
-      - name: publish ${{ env.file_distances_name }}
+      - if: steps.cache.outputs.cache-hit != 'true'
+        name: publish ${{ env.file_distances_name }}
         uses: ./.github/actions/publish
         with:
           filename: ${{ env.file_distances_name }}
           ACCOUNT_TOKEN_GIST: ${{ secrets.ACCOUNT_TOKEN_GIST }}
           TARGET_GIST_ID: ${{ vars.TARGET_GIST_ID }}
 
-      - name: publish ${{ env.file_no_sourceCommit_name }}
+      - if: steps.cache.outputs.cache-hit != 'true'
+        name: publish ${{ env.file_no_sourceCommit_name }}
         uses: ./.github/actions/publish
         with:
           filename: ${{ env.file_no_sourceCommit_name }}
