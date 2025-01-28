@@ -16,12 +16,15 @@ runs:
     - name: Update Gist
       shell: bash
       run: |
+        echo "====== ${{ inputs.filename }} sample ======"
         head -n 10 ${{ inputs.filename }}
         
         jq -n --arg filename "${{ inputs.filename }}" --rawfile content  "${{ inputs.filename }}" \
           '{files: {($filename): {content: $content}}}' >> json_data
+        echo "====== json_data sample ======"
         head -n 10 json_data | cut -c 1-100
-        
+
+        echo "====== curl ======"
         response=$(curl -L \
           -X PATCH \
           -H "Accept: application/vnd.github+json" \
