@@ -29,10 +29,6 @@ jobs:
           path: content
           fetch-depth: 0
 
-      - name: Debug Info
-        run: |
-          ls
-
       - name: run script
         run: |
           $en_folder = (Resolve-Path -Path "content\files\en-us").Path
@@ -40,13 +36,12 @@ jobs:
           $env:GIT_DIR = ".\content\.git"
           $env:GIT_WORK_TREE = ".\content"
           Write-Host $en_folder $zh_folder $env:GIT_DIR $env:GIT_WORK_TREE
+
           
-          $files = Get-ChildItem -Path $zh_folder -Recurse -File -Filter "*.md"
-          Write-Host $files.Length
-          $files | Select-Object -First 6 | Write-Host
-          
-          $files = $files | Select-Object -ExpandProperty FullName
-          Write-Host $files.Length
+          $files = Get-ChildItem -Path $zh_folder -Recurse -File -Filter "*.md"|`
+          Select-Object -ExpandProperty FullName
+          Write-Host "length: " $files.Length
+          "====== SAMPLE ======"
           $files | Select-Object -First 6 | Write-Host
           
           $commitDistances = [System.Collections.Generic.List[PSObject]]::new()
@@ -70,32 +65,16 @@ jobs:
           $commitDistances.ToArray() | Export-Csv -Path ${{ env.file_distances_name }} -NoTypeInformation
           $badFrontMatter | Out-File -FilePath ${{ env.file_no_sourceCommit_name }} -Encoding ascii
 
-      - name: Create artifact ${{ env.file_distances_name }}
-        uses: actions/upload-artifact@v4.6.0
+      - name: publish ${{ env.file_distances_name }}
+        uses: ./.github/actions/publish
         with:
-          name: ${{ env.file_distances_name }}
-          path: ${{ env.file_distances_name }}
-          retention-days: 14
+          filename: ${{ env.file_distances_name }}
+          ACCOUNT_TOKEN_GIST: ${{ secrets.ACCOUNT_TOKEN_GIST }}
+          TARGET_GIST_ID: ${{ vars.TARGET_GIST_ID }}
 
-      - name: Create artifact no_sourceCommit.txt
-        uses: actions/upload-artifact@v4.6.0
+      - name: publish ${{ env.file_no_sourceCommit_name }}
+        uses: ./.github/actions/publish
         with:
-          name: ${{ env.file_no_sourceCommit_name }}
-          path: ${{ env.file_no_sourceCommit_name }}
-          retention-days: 14
-
-  publish_distances:
-    uses: ./.github/workflows/publish.yml
-    needs: check_sourceCommit
-    with:
-      filename: "distances.csv"
-    secrets:
-      ACCOUNT_TOKEN_GIST: ${{ secrets.ACCOUNT_TOKEN_GIST }}
-
-  publish_no_sourceCommit:
-    uses: ./.github/workflows/publish.yml
-    needs: check_sourceCommit
-    with:
-      filename: "no_sourceCommit.txt"
-    secrets:
-      ACCOUNT_TOKEN_GIST: ${{ secrets.ACCOUNT_TOKEN_GIST }}
+          filename: ${{ env.file_no_sourceCommit_name }}
+          ACCOUNT_TOKEN_GIST: ${{ secrets.ACCOUNT_TOKEN_GIST }}
+          TARGET_GIST_ID: ${{ vars.TARGET_GIST_ID }}
