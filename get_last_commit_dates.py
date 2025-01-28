@@ -1,4 +1,4 @@
-# old.py
+# depended by workflow last_commit_date.yml
 import sys
 import csv
 
