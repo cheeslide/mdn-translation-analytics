@@ -25,8 +25,7 @@ runs:
         Write-Host '$latestHash' $latestHash
         echo "latest-hash=$latestHash" >> $env:GITHUB_ENV
     
-    - if: inputs.fetch-depth != 0
-      name: Cache repo (not 0)
+    - name: Cache repo
       uses: actions/cache@v4.2.0
       with:
         path: ${{ inputs.path }}
@@ -34,15 +33,6 @@ runs:
         restore-keys: |
           translated-content depth${{ inputs.fetch-depth }}
           translated-content
-
-    - if: inputs.fetch-depth == 0
-      name: Cache repo (0)
-      uses: actions/cache@v4.2.0
-      with:
-        path: ${{ inputs.path }}
-        key: translated-content depth${{ inputs.fetch-depth }} ${{ env.latest-hash }}
-        restore-keys: |
-          translated-content depth${{ inputs.fetch-depth }}
        
     - name: Checkout repo
       uses: actions/checkout@v4
