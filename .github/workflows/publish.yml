@@ -18,7 +18,7 @@ jobs:
 
       - name: Update Gist
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.ACCOUNT_TOKEN_GIST }}
         run: |
           head -n 10 ${{ inputs.filename }}
           
