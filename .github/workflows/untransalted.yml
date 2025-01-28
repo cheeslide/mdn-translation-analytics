@@ -49,3 +49,4 @@ jobs:
         with:
           filename: ${{ env.file_untranslated_name }}
           ACCOUNT_TOKEN_GIST: ${{ secrets.ACCOUNT_TOKEN_GIST }}
+          TARGET_GIST_ID: ${{ vars.TARGET_GIST_ID }}
