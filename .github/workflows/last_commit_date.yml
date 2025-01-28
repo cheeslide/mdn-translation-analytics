@@ -32,17 +32,9 @@ jobs:
 
       - run: ls -Depth 1
 
-      - name: Create artifact ${{ env.outfile_name }}
-        uses: actions/upload-artifact@v4.6.0
+      - name: publish
+        uses: ./.github/actions/publish
         with:
-          name: ${{ env.outfile_name }}
-          path: ${{ env.outfile_name }}
-          retention-days: 14
-
-  publish:
-    uses: ./.github/workflows/publish.yml
-    needs: check_last_commit_date
-    with:
-      filename: "last_commit_date.csv"
-    secrets:
-      ACCOUNT_TOKEN_GIST: ${{ secrets.ACCOUNT_TOKEN_GIST }}
+          filename: ${{ env.outfile_name }}
+          ACCOUNT_TOKEN_GIST: ${{ secrets.ACCOUNT_TOKEN_GIST }}
+          TARGET_GIST_ID: ${{ vars.TARGET_GIST_ID }}
