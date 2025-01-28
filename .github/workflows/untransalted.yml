@@ -44,17 +44,8 @@ jobs:
               }
           } | Out-File -FilePath ${{ env.file_untranslated_name }} -Encoding UTF8
 
-      - name: Create artifact ${{ env.file_untranslated_name }}
-        uses: actions/upload-artifact@v4.6.0
+      - name: publish
+        uses: ./.github/actions/publish
         with:
-          name: ${{ env.file_untranslated_name }}
-          path: ${{ env.file_untranslated_name }}
-          retention-days: 14
-
-  publish_untranslated:
-    uses: ./.github/workflows/publish.yml
-    needs: check_untranslated
-    with:
-      filename: "untranslated.csv"
-    secrets:
-      ACCOUNT_TOKEN_GIST: ${{ secrets.ACCOUNT_TOKEN_GIST }}
+          filename: ${{ env.file_untranslated_name }}
+          ACCOUNT_TOKEN_GIST: ${{ secrets.ACCOUNT_TOKEN_GIST }}
