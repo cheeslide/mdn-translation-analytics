@@ -30,8 +30,6 @@ jobs:
       - run: ls -Depth 1
 
       - name: run script
-        env:
-          output_file: ${{ env.file_untranslated_name }}
         run: |
           $en_folder = (Resolve-Path -Path "content\files\en-us").Path
           $zh_folder = (Resolve-Path -Path "translated-content\files\zh-cn").Path
@@ -44,7 +42,7 @@ jobs:
               if (!(Test-Path -Path $zh_file)) {
                   $relative_path
               }
-          } | Out-File -FilePath $output_file -Encoding UTF8
+          } | Out-File -FilePath ${{ env.file_untranslated_name }} -Encoding UTF8
 
       - name: Create artifact ${{ env.file_untranslated_name }}
         uses: actions/upload-artifact@v4.6.0
