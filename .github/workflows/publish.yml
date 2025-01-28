@@ -9,6 +9,12 @@ on:
     secrets:
       ACCOUNT_TOKEN_GIST:
         required: true
+  workflow_dispatch:
+    inputs:
+      filename:
+        description: 'name of the file to be publish, must be an Artifact'
+        required: true
+        type: string
 
 jobs:
   update-gist:
