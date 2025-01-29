@@ -33,10 +33,10 @@ runs:
       uses: actions/cache@v4.2.0
       with:
         path: ${{ inputs.path }}
-        key: translated-content depth${{ inputs.fetch-depth }} ${{ steps.get-hash.outputs.latest-hash }}
+        key: ${{inputs.repo}} depth${{ inputs.fetch-depth }} ${{ steps.get-hash.outputs.latest-hash }}
         restore-keys: |
-          translated-content depth${{ inputs.fetch-depth }}
-          translated-content
+          ${{inputs.repo}} depth${{ inputs.fetch-depth }}
+          ${{inputs.repo}}
        
     - if: steps.cache.outputs.cache-hit != 'true'
       name: Checkout repo
