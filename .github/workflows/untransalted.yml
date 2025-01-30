@@ -39,19 +39,26 @@ jobs:
       - if: steps.cache.outputs.cache-hit != 'true'
         name: run script
         run: |
+          $languages = "es", "fr", "ja", "ko", "pt-br", "ru", "zh-cn", "zh-tw"
           $en_folder = (Resolve-Path -Path "content\files\en-us").Path
           $translation_mu = (Resolve-Path -Path "translated-content\files\$lang").Path
+
+          $translation_si_list = $languages | ForEach-Object {
+              $x = Join-Path -Path $translation_mu -ChildPath $_
+              if (!(Test-Path -Path $x)) { throw "path error: language code. `n $languages `n $x `n" }
+              $x
+          }
           
           Get-ChildItem -Path $en_folder -Recurse -File -Filter "*.md" | `
           Select-Object -ExpandProperty FullName | `
           ForEach-Object {
-              $lang = "zh-cn"
-              $translation_si = Join-Path -Path $translation_mu -ChildPath $lang
-              $relative_path = [System.IO.Path]::GetRelativePath($en_folder, $_)
-              $translation_file = Join-Path -Path $translation_si -ChildPath $relative_path
-              
-              if (!(Test-Path -Path $translation_file)) {
-                  [System.IO.Path]::GetRelativePath($translation_mu,$translation_file)
+              foreach( $translation_si in $translation_si_list ) {
+                  $relative_path = [System.IO.Path]::GetRelativePath($en_folder, $_)
+                  $translation_file = Join-Path -Path $translation_si -ChildPath $relative_path
+                  
+                  if (!(Test-Path -Path $translation_file)) {
+                      [System.IO.Path]::GetRelativePath($translation_mu, $translation_file)
+                  }
               }
           } | Out-File -FilePath "${{ env.file_untranslated_name }}" -Encoding ascii
 
