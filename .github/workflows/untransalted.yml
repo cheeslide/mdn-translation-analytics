@@ -16,35 +16,46 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: cache and checkout mdn/translated-content
+        id: get-translated-content
         uses: ./.github/actions/cached-checkout
         with:
           repo: mdn/translated-content
           path: translated-content
 
       - name: cache and checkout mdn/content
+        id: get-content
         uses: ./.github/actions/cached-checkout
         with:
           repo: mdn/content
           path: content
 
-      - run: ls -Depth 1
+      - name: Cache ${{ env.file_untranslated_name }}
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.file_untranslated_name }}
+          key: check untranslated output ${{ steps.get-translated-content.outputs.latest-hash }}~${{ steps.get-content.outputs.latest-hash }}
 
-      - name: run script
+      - if: steps.cache.outputs.cache-hit != 'true'
+        name: run script
         run: |
           $en_folder = (Resolve-Path -Path "content\files\en-us").Path
-          $zh_folder = (Resolve-Path -Path "translated-content\files\zh-cn").Path
+          $lang = "zh-cn"
+          $translation_folder = (Resolve-Path -Path "translated-content\files\$lang").Path
           
           Get-ChildItem -Path $en_folder -Recurse -File -Filter "*.md" | `
           Select-Object -ExpandProperty FullName | `
           ForEach-Object {
-              $relative_path = $_ -replace [regex]::Escape($en_folder), ""
-              $zh_file = Join-Path -Path $zh_folder -ChildPath $relative_path
+              $relativePath = [System.IO.Path]::GetRelativePath($en_folder, $_)
+              $zh_file = Join-Path -Path $translation_folder -ChildPath $relative_path
+              
               if (!(Test-Path -Path $zh_file)) {
                   $relative_path
               }
-          } | Out-File -FilePath ${{ env.file_untranslated_name }} -Encoding UTF8
+          } | Out-File -FilePath "${{ env.file_untranslated_name }} $lang" -Encoding UTF8
 
-      - name: publish
+      - if: steps.cache.outputs.cache-hit != 'true'
+        name: publish
         uses: ./.github/actions/publish
         with:
           filename: ${{ env.file_untranslated_name }}
