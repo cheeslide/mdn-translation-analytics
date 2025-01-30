@@ -48,7 +48,6 @@ jobs:
           $env:GIT_DIR = ".\content\.git"
           $env:GIT_WORK_TREE = ".\content"
           Write-Host $en_folder $zh_folder $env:GIT_DIR $env:GIT_WORK_TREE
-
           
           $files = Get-ChildItem -Path $zh_folder -Recurse -File -Filter "*.md"|`
           Select-Object -ExpandProperty FullName
@@ -61,8 +60,8 @@ jobs:
           
           ForEach ($file in $files) {
               $file_start = -join (Get-Content -Path $file -TotalCount 6)
+              $relative_path = [System.IO.Path]::GetRelativePath($zh_folder, $file)
               if ($file_start -match "\s{1,}sourceCommit:\s?([0-9a-f]{40})") {
-                  $relative_path = $file -replace [regex]::Escape($zh_folder), ""
                   $en_file = Join-Path -Path $en_folder -ChildPath $relative_path
                   $the_redundant_variable_to_remove_the_whitespace = $Matches[1] + "..HEAD"
                   $commitDistances.add([PSCustomObject]@{
