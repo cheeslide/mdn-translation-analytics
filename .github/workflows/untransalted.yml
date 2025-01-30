@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  file_untranslated_name: "untranslated.csv" # when it, also change jobs.publish_untranslated.with.filename
+  file_untranslated_name: "untranslated.txt" # when it, also change jobs.publish_untranslated.with.filename
 
 jobs:
   check_untranslated:
