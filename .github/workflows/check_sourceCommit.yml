@@ -66,11 +66,11 @@ jobs:
                   $en_file = Join-Path -Path $en_folder -ChildPath $relative_path
                   $the_redundant_variable_to_remove_the_whitespace = $Matches[1] + "..HEAD"
                   $commitDistances.add([PSCustomObject]@{
-                      File = $file
+                      File = $relative_path
                       Distance = git rev-list --count $the_redundant_variable_to_remove_the_whitespace -- $en_file
                   })
               } else {
-                  $badFrontMatter.add($file)
+                  $badFrontMatter.add($relative_path)
               }
           }
           
