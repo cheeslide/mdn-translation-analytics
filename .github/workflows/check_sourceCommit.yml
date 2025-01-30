@@ -62,7 +62,7 @@ jobs:
           ForEach ($file in $files) {
               $file_start = -join (Get-Content -Path $file -TotalCount 6)
               if ($file_start -match "\s{1,}sourceCommit:\s?([0-9a-f]{40})") {
-                  $relative_path = $file -replace [regex]::Escape($translation_folder), ""
+                  $relative_path = $file -replace [regex]::Escape($zh_folder), ""
                   $en_file = Join-Path -Path $en_folder -ChildPath $relative_path
                   $the_redundant_variable_to_remove_the_whitespace = $Matches[1] + "..HEAD"
                   $commitDistances.add([PSCustomObject]@{
