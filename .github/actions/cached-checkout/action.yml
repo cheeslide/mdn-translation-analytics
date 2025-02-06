@@ -22,11 +22,9 @@ runs:
     - name: Get Latest Commit Hash
       id: get-hash
       shell: powershell
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         $whyMustHere = @{
-          'authorization' = 'Bearer $GITHUB_TOKEN'
+          'authorization' = 'Bearer ${{github.token}}'
         }
         $commits = Invoke-WebRequest -Uri 'https://api.github.com/repos/${{inputs.repo}}/commits?per_page=1' -Headers $whyMustHere -Method Get | ConvertFrom-Json
         $latestHash = $commits[0].sha
