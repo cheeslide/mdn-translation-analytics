@@ -1,6 +1,8 @@
 name: integrate 4 files
 
 on:
+  schedule:
+    - cron: "42 22 * * 2,6"
   workflow_dispatch:
 
 env:
@@ -119,6 +121,6 @@ jobs:
       - name: publish
         uses: ./.github/actions/publish
         with:
-          filename: ${{ env.file_untranslated_name }}
+          filename: "output.xlsx"
           ACCOUNT_TOKEN_GIST: ${{ secrets.ACCOUNT_TOKEN_GIST }}
           TARGET_GIST_ID: ${{ vars.TARGET_GIST_ID }} 
