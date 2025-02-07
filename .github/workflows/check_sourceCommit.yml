@@ -1,8 +1,8 @@
 name: check l10n.sourceCommit
 
 on:
-  schedule:
-  - cron: "42 22 * * 2,6"
+  # schedule:
+  # - cron: "42 22 * * 2,6"
   workflow_dispatch:
 
 env:
