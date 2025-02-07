@@ -1,0 +1,117 @@
+name: integrate 4 files
+
+on:
+  workflow_dispatch:
+
+env:
+  file_distances_name: "distances.csv"
+  file_no_sourceCommit_name: "no_sourceCommit.txt"
+  file_last_date_name: "last_commit_date.csv"
+  file_untranslated_name: "untranslated.txt" # when change names, also change /integrate.py
+
+jobs:
+  main:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: cache and checkout mdn/translated-content
+        id: get-translated-content
+        uses: ./.github/actions/cached-checkout
+        with:
+          repo: mdn/translated-content
+          path: translated-content
+
+      - name: cache and checkout mdn/content (depth 0)
+        id: get-content
+        uses: ./.github/actions/cached-checkout
+        with:
+          repo: mdn/content
+          path: content
+          fetch-depth: 0
+
+      - name: check sourceCommit
+        run: |
+          $en_folder = (Resolve-Path -Path "content\files\en-us").Path
+          $zh_folder = (Resolve-Path -Path "translated-content\files\zh-cn").Path
+          $env:GIT_DIR = ".\content\.git"
+          $env:GIT_WORK_TREE = ".\content"
+          Write-Host $en_folder $zh_folder $env:GIT_DIR $env:GIT_WORK_TREE
+          
+          $files = Get-ChildItem -Path $zh_folder -Recurse -File -Filter "*.md"|`
+          Select-Object -ExpandProperty FullName
+          Write-Host "length: " $files.Length
+          "====== SAMPLE ======"
+          $files | Select-Object -First 6 | Write-Host
+          
+          $commitDistances = [System.Collections.Generic.List[PSObject]]::new()
+          $badFrontMatter = [System.Collections.Generic.List[String]]::new()
+          
+          ForEach ($file in $files) {
+              $file_start = -join (Get-Content -Path $file -TotalCount 6)
+              $relative_path = [System.IO.Path]::GetRelativePath($zh_folder, $file)
+              if ($file_start -match "\s{1,}sourceCommit:\s?([0-9a-f]{40})") {
+                  $en_file = Join-Path -Path $en_folder -ChildPath $relative_path
+                  $the_redundant_variable_to_remove_the_whitespace = $Matches[1] + "..HEAD"
+                  $commitDistances.add([PSCustomObject]@{
+                      File = $relative_path
+                      Distance = git rev-list --count $the_redundant_variable_to_remove_the_whitespace -- $en_file
+                  })
+              } else {
+                  $badFrontMatter.add($relative_path)
+              }
+          }
+          
+          $commitDistances.ToArray() | Export-Csv -Path ${{ env.file_distances_name }} -NoTypeInformation
+          $badFrontMatter | Out-File -FilePath ${{ env.file_no_sourceCommit_name }} -Encoding ascii
+
+      - name: check last commit date
+        run: |
+          $logFile = "md_logs.txt"
+          $targetFiles = "current_files.txt"
+          $env:GIT_DIR = ".\translated-content\.git"
+          $env:GIT_WORK_TREE = ".\translated-content"
+          
+          git log --format=%ad --date=short --name-only | Out-File -FilePath $logFile -Encoding ascii
+          git ls-files *.md | Out-File -FilePath $targetFiles -Encoding ascii
+          python get_last_commit_dates.py $logFile ${{env.file_last_date_name}} $targetFiles
+          rm $logFile
+          rm $targetFiles
+
+      - name: check untranslated
+        run: |
+          $languages = "es", "fr", "ja", "ko", "pt-br", "ru", "zh-cn", "zh-tw"
+          $en_folder = (Resolve-Path -Path "content\files\en-us").Path
+          $translation_mu = (Resolve-Path -Path "translated-content\files\$lang").Path
+
+          $translation_si_list = $languages | ForEach-Object {
+              $x = Join-Path -Path $translation_mu -ChildPath $_
+              if (!(Test-Path -Path $x)) { throw "path error: language code. `n $languages `n $x `n" }
+              $x
+          }
+          
+          Get-ChildItem -Path $en_folder -Recurse -File -Filter "*.md" | `
+          Select-Object -ExpandProperty FullName | `
+          ForEach-Object {
+              foreach( $translation_si in $translation_si_list ) {
+                  $relative_path = [System.IO.Path]::GetRelativePath($en_folder, $_)
+                  $translation_file = Join-Path -Path $translation_si -ChildPath $relative_path
+                  
+                  if (!(Test-Path -Path $translation_file)) {
+                      [System.IO.Path]::GetRelativePath($translation_mu, $translation_file)
+                  }
+              }
+          } | Out-File -FilePath "${{ env.file_untranslated_name }}" -Encoding ascii
+
+      - name: integrate
+        run: python integrate.py
+
+      - if: github.event_name == 'workflow_dispatch'
+        run: ls
+      
+      - name: publish
+        uses: ./.github/actions/publish
+        with:
+          filename: ${{ env.file_untranslated_name }}
+          ACCOUNT_TOKEN_GIST: ${{ secrets.ACCOUNT_TOKEN_GIST }}
+          TARGET_GIST_ID: ${{ vars.TARGET_GIST_ID }} 
