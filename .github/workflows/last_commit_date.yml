@@ -1,8 +1,8 @@
 name: check last commit date
 
 on:
-  schedule:
-  - cron: "42 22 * * *"
+  # schedule:
+  # - cron: "42 22 * * *"
   workflow_dispatch:
 
 env:
