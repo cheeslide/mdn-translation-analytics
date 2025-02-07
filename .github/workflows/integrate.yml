@@ -24,12 +24,12 @@ jobs:
           
       - run: pip install -r requirements.txt
       
-      - name: cache and checkout mdn/translated-content
-        id: get-translated-content
+      - name: cache and checkout mdn/translated-content (depth 0)
         uses: ./.github/actions/cached-checkout
         with:
           repo: mdn/translated-content
           path: translated-content
+          fetch-depth: 0
 
       - name: cache and checkout mdn/content (depth 0)
         id: get-content
@@ -38,41 +38,6 @@ jobs:
           repo: mdn/content
           path: content
           fetch-depth: 0
-
-      - name: check sourceCommit
-        run: |
-          $en_folder = (Resolve-Path -Path "content\files\en-us").Path
-          $zh_folder = (Resolve-Path -Path "translated-content\files\zh-cn").Path
-          $env:GIT_DIR = ".\content\.git"
-          $env:GIT_WORK_TREE = ".\content"
-          Write-Host $en_folder $zh_folder $env:GIT_DIR $env:GIT_WORK_TREE
-          
-          $files = Get-ChildItem -Path $zh_folder -Recurse -File -Filter "*.md"|`
-          Select-Object -ExpandProperty FullName
-          Write-Host "length: " $files.Length
-          "====== SAMPLE ======"
-          $files | Select-Object -First 6 | Write-Host
-          
-          $commitDistances = [System.Collections.Generic.List[PSObject]]::new()
-          $badFrontMatter = [System.Collections.Generic.List[String]]::new()
-          
-          ForEach ($file in $files) {
-              $file_start = -join (Get-Content -Path $file -TotalCount 6)
-              $relative_path = [System.IO.Path]::GetRelativePath($zh_folder, $file)
-              if ($file_start -match "\s{1,}sourceCommit:\s?([0-9a-f]{40})") {
-                  $en_file = Join-Path -Path $en_folder -ChildPath $relative_path
-                  $the_redundant_variable_to_remove_the_whitespace = $Matches[1] + "..HEAD"
-                  $commitDistances.add([PSCustomObject]@{
-                      File = $relative_path
-                      Distance = git rev-list --count $the_redundant_variable_to_remove_the_whitespace -- $en_file
-                  })
-              } else {
-                  $badFrontMatter.add($relative_path)
-              }
-          }
-          
-          $commitDistances.ToArray() | Export-Csv -Path ${{ env.file_distances_name }} -NoTypeInformation
-          $badFrontMatter | Out-File -FilePath ${{ env.file_no_sourceCommit_name }} -Encoding ascii
 
       - name: check last commit date
         run: |
@@ -111,6 +76,41 @@ jobs:
                   }
               }
           } | Out-File -FilePath "${{ env.file_untranslated_name }}" -Encoding ascii
+
+      - name: check sourceCommit
+        run: |
+          $en_folder = (Resolve-Path -Path "content\files\en-us").Path
+          $zh_folder = (Resolve-Path -Path "translated-content\files\zh-cn").Path
+          $env:GIT_DIR = ".\content\.git"
+          $env:GIT_WORK_TREE = ".\content"
+          Write-Host $en_folder $zh_folder $env:GIT_DIR $env:GIT_WORK_TREE
+          
+          $files = Get-ChildItem -Path $zh_folder -Recurse -File -Filter "*.md"|`
+          Select-Object -ExpandProperty FullName
+          Write-Host "length: " $files.Length
+          "====== SAMPLE ======"
+          $files | Select-Object -First 6 | Write-Host
+          
+          $commitDistances = [System.Collections.Generic.List[PSObject]]::new()
+          $badFrontMatter = [System.Collections.Generic.List[String]]::new()
+          
+          ForEach ($file in $files) {
+              $file_start = -join (Get-Content -Path $file -TotalCount 6)
+              $relative_path = [System.IO.Path]::GetRelativePath($zh_folder, $file)
+              if ($file_start -match "\s{1,}sourceCommit:\s?([0-9a-f]{40})") {
+                  $en_file = Join-Path -Path $en_folder -ChildPath $relative_path
+                  $the_redundant_variable_to_remove_the_whitespace = $Matches[1] + "..HEAD"
+                  $commitDistances.add([PSCustomObject]@{
+                      File = $relative_path
+                      Distance = git rev-list --count $the_redundant_variable_to_remove_the_whitespace -- $en_file
+                  })
+              } else {
+                  $badFrontMatter.add($relative_path)
+              }
+          }
+          
+          $commitDistances.ToArray() | Export-Csv -Path ${{ env.file_distances_name }} -NoTypeInformation
+          $badFrontMatter | Out-File -FilePath ${{ env.file_no_sourceCommit_name }} -Encoding ascii
 
       - name: integrate
         run: python integrate.py
