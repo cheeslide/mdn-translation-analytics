@@ -117,10 +117,23 @@ jobs:
 
       - if: github.event_name == 'workflow_dispatch'
         run: ls
+
+      - uses: actions/upload-artifact@v4
+        id: artifact-upload
+        with:
+          name: my-artifact
+          path: "output.xlsx"
+          compression-level: 0
+
+      - name: Output artifact ID
+        run: |
+          echo 'Artifact URL is ${{ steps.artifact-upload.outputs.artifact-url }}'
+          echo ${{ steps.artifact-upload.outputs.artifact-url }} > URL.txt
+          gc URL.txt
       
       - name: publish
         uses: ./.github/actions/publish
         with:
-          filename: "output.xlsx"
+          filename: URL.txt
           ACCOUNT_TOKEN_GIST: ${{ secrets.ACCOUNT_TOKEN_GIST }}
-          TARGET_GIST_ID: ${{ vars.TARGET_GIST_ID }} 
+          TARGET_GIST_ID: ${{ vars.TARGET_GIST_ID }}
