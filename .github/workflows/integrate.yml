@@ -79,33 +79,40 @@ jobs:
 
       - name: check sourceCommit
         run: |
-          $en_folder = (Resolve-Path -Path "content\files\en-us").Path
-          $zh_folder = (Resolve-Path -Path "translated-content\files\zh-cn").Path
           $env:GIT_DIR = ".\content\.git"
           $env:GIT_WORK_TREE = ".\content"
-          Write-Host $en_folder $zh_folder $env:GIT_DIR $env:GIT_WORK_TREE
+          $languages = "es", "fr", "ja", "ko", "pt-br", "ru", "zh-cn", "zh-tw"
           
-          $files = Get-ChildItem -Path $zh_folder -Recurse -File -Filter "*.md"|`
-          Select-Object -ExpandProperty FullName
-          Write-Host "length: " $files.Length
-          "====== SAMPLE ======"
-          $files | Select-Object -First 6 | Write-Host
+          $en_folder = (Resolve-Path -Path "content\files\en-us").Path
+          $translation_mu = (Resolve-Path -Path "translated-content\files\").Path
+          
+          $languages | ForEach-Object {
+              $x = Join-Path -Path $translation_mu -ChildPath $_
+              if (!(Test-Path -Path  $x)) {
+                  throw "path error: language code. Anncounced $languages, but $x is not found."
+              }
+          }
           
           $commitDistances = [System.Collections.Generic.List[PSObject]]::new()
           $badFrontMatter = [System.Collections.Generic.List[String]]::new()
           
-          ForEach ($file in $files) {
-              $file_start = -join (Get-Content -Path $file -TotalCount 6)
-              $relative_path = [System.IO.Path]::GetRelativePath($zh_folder, $file)
-              if ($file_start -match "\s{1,}sourceCommit:\s?([0-9a-f]{40})") {
-                  $en_file = Join-Path -Path $en_folder -ChildPath $relative_path
-                  $the_redundant_variable_to_remove_the_whitespace = $Matches[1] + "..HEAD"
-                  $commitDistances.add([PSCustomObject]@{
-                      File = $relative_path
-                      Distance = git rev-list --count $the_redundant_variable_to_remove_the_whitespace -- $en_file
-                  })
-              } else {
-                  $badFrontMatter.add($relative_path)
+          foreach ($lang in $languages) {
+              $translation_folder = (Resolve-Path -Path "translated-content\files\$lang").Path
+              $files = Get-ChildItem -Path $zh_folder -Recurse -File -Filter "*.md"|`
+                  Select-Object -ExpandProperty FullName
+              ForEach ($file in $files) {
+                  $file_start = -join (Get-Content -Path $file -TotalCount 6)
+                  $relative_path = [System.IO.Path]::GetRelativePath($translation_folder, $file)
+                  if ($file_start -match "\s{1,}sourceCommit:\s?([0-9a-f]{40})") {
+                      $en_file = Join-Path -Path $en_folder -ChildPath $relative_path
+                      $the_redundant_variable_to_remove_the_whitespace = $Matches[1] + "..HEAD"
+                      $commitDistances.add([PSCustomObject]@{
+                          File = "$lang\$relative_path"
+                          Distance = git rev-list --count $the_redundant_variable_to_remove_the_whitespace -- $en_file
+                      })
+                  } else {
+                      $badFrontMatter.add("$lang\$relative_path")
+                  }
               }
           }
           
