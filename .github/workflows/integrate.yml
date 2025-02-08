@@ -97,9 +97,11 @@ jobs:
           $badFrontMatter = [System.Collections.Generic.List[String]]::new()
           
           foreach ($lang in $languages) {
+              write-host "Starting $lang"
               $translation_folder = (Resolve-Path -Path "translated-content\files\$lang").Path
               $files = Get-ChildItem -Path $zh_folder -Recurse -File -Filter "*.md"|`
                   Select-Object -ExpandProperty FullName
+              write-host "Found $($files.Count) files in $lang"
               ForEach ($file in $files) {
                   $file_start = -join (Get-Content -Path $file -TotalCount 6)
                   $relative_path = [System.IO.Path]::GetRelativePath($translation_folder, $file)
@@ -114,6 +116,8 @@ jobs:
                       $badFrontMatter.add("$lang\$relative_path")
                   }
               }
+              write-host "Finished $lang"
+              write-host "$($commitDistances.Count) files have sourceCommit, $($badFrontMatter.Count) files do not have sourceCommit"
           }
           
           $commitDistances.ToArray() | Export-Csv -Path ${{ env.file_distances_name }} -NoTypeInformation
