@@ -123,7 +123,9 @@ jobs:
           $badFrontMatter | Out-File -FilePath ${{ env.file_no_sourceCommit_name }} -Encoding ascii
     
       - name: integrate
-        run: python integrate.py
+        run: |
+          mkdir output
+          python integrate.py
 
       - if: github.event_name == 'workflow_dispatch'
         run: ls
