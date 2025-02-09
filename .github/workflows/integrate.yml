@@ -131,9 +131,8 @@ jobs:
       - uses: actions/upload-artifact@v4
         id: artifact-upload
         with:
-          name: my-artifact
-          path: "output.xlsx"
-          compression-level: 0
+          name: output
+          path: "output"
 
       - name: Output artifact ID
         run: |
