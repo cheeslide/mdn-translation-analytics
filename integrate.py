@@ -1,7 +1,8 @@
 import pandas as pd
 from datetime import datetime, timedelta
 
-OUTPUT_FILE_NAME = 'output.xlsx'
+
+languages = ["es", "fr", "ja", "ko", "pt-br", "ru", "zh-cn", "zh-tw"]
 
 # 读取数据
 distances_df = pd.read_csv('distances.csv')
@@ -24,10 +25,23 @@ no_sourceCommit_df = no_sourceCommit_df.sort_values(by='Data')
 untranslated_df = untranslated_df.sort_values(by='Data')
 
 # 写入 Excel 文件
-with pd.ExcelWriter(OUTPUT_FILE_NAME) as writer:
+with pd.ExcelWriter('output/all.xlsx') as writer:
     distances_df.to_excel(writer, sheet_name='Distances', index=False)
     last_commit_date_df.to_excel(writer, sheet_name='Last_Commit_Date', index=False)
     no_sourceCommit_df.to_excel(writer, sheet_name='No_Source_Commit', index=False)
     untranslated_df.to_excel(writer, sheet_name='Untranslated', index=False)
 
-print(f"written to {OUTPUT_FILE_NAME}")
+# 按语言写入 Excel 文件
+for lang in languages:
+    lang_dist_df = distances_df[distances_df['File'].str.startswith(lang)]
+    lang_last_commit_df = last_commit_date_df[last_commit_date_df['File'].str.startswith(f'files/{lang}')]
+    lang_no_sourceCommit_df = no_sourceCommit_df[no_sourceCommit_df['Data'].str.startswith(lang)]
+    lang_untranslated_df = untranslated_df[untranslated_df['Data'].str.startswith(lang)]
+    
+    with pd.ExcelWriter(f'output/{lang}.xlsx') as writer:
+        lang_dist_df.to_excel(writer, sheet_name='Distances', index=False)
+        lang_last_commit_df.to_excel(writer, sheet_name='Last_Commit_Date', index=False)
+        lang_no_sourceCommit_df.to_excel(writer, sheet_name='No_Source_Commit', index=False)
+        lang_untranslated_df.to_excel(writer, sheet_name='Untranslated', index=False)
+
+print(f"written to ./output")
