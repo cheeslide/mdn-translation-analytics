@@ -42,7 +42,7 @@ jobs:
       - name: check last commit date
         run: |
           $maxConcurrentJobs = 16
-          $maxPackCapacity = 20
+          $maxPackCapacity = 400
           
           $languages = "es", "fr", "ja", "ko", "pt-br", "ru", "zh-cn", "zh-tw"
           $env:GIT_DIR = ".\content\.git"
@@ -75,11 +75,14 @@ jobs:
               }
           }
           
+          write-host "Total tasks: $($tasks.Count)"
+          write-host "Start processing..."
+          
           # 循环并启动任务
           while ($tasks.Count) {
               # 等待直到后台任务数量少于最大并发数
               while ((Get-Job).Count -ge $maxConcurrentJobs) {
-                  Start-Sleep -Seconds 0.3
+                  Start-Sleep -Seconds 1
                   # 检查是否有任务完成，如果有则移除
                   $completedJobs = Get-Job -State Completed
                   $completedJobs | ForEach-Object {
@@ -102,6 +105,8 @@ jobs:
                   
                   foreach ($relative_path in $taskPack) {
                       $translation_file = Join-Path -Path $translation_mu -ChildPath $relative_path
+                      $en_file = Join-Path -Path $en_folder -ChildPath $relative_path
+          
                       if (!(Test-Path -Path $translation_file)) {
                           $untranslated.add($relative_path)
                           continue
@@ -124,7 +129,10 @@ jobs:
                       commitDistances = $commitDistances
                   }
               }
+              write-host "tasks left: $($tasks.Count)"
           }
+          
+          write-host "All jobs started, waiting for completion..."
           
           # 等待所有任务完成并获取结果
           Get-Job | ForEach-Object {
