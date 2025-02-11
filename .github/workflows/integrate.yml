@@ -82,14 +82,20 @@ jobs:
           while ($tasks.Count) {
               # 等待直到后台任务数量少于最大并发数
               while ((Get-Job).Count -ge $maxConcurrentJobs) {
-                  Start-Sleep -Seconds 1
                   # 检查是否有任务完成，如果有则移除
                   $completedJobs = Get-Job -State Completed
                   $completedJobs | ForEach-Object {
-                      # 移除已完成的任务
-                      Merge-Result(Receive-Job -Job $_ -Wait)
-                      Remove-Job -Job $_
+                      try {
+                          # 确保接收任务结果并移除任务
+                          $result = Receive-Job -Job $_ -Wait
+                          Merge-Result $result   # 假设 Merge-Result 是一个已定义的函数
+                          Remove-Job -Job $_
+                      }
+                      catch {
+                          Write-Error "处理任务时出错: $_"
+                      }
                   }
+                  Start-Sleep -Seconds 1
               }
               
               # 开始创建新job
