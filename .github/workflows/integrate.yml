@@ -103,12 +103,10 @@ jobs:
                       $result = Receive-Job -Job $_ -Wait
                       Merge-Result $result
                       Remove-Job -Job $_
-                      Write-Host "Untranslated List: $untranslated"
-                      Write-Host "Result Untranslated: $($result.untranslated)"
-                      Write-Host $untranslated.GetType().FullName
-                      Write-Host $result.untranslated.GetType().FullName
+                      Write-Host "2 Untranslated List: $untranslated, Result Untranslated: $($result.untranslated), $($untranslated.GetType().FullName), $($result.untranslated.GetType().FullName)"
                   }
                   Start-Sleep -Seconds 1
+                  Write-Host "1 Untranslated List: $untranslated, Result Untranslated: $($result.untranslated), $($untranslated.GetType().FullName), $($result.untranslated.GetType().FullName)"
               }
               
               # 开始创建新job
@@ -141,7 +139,7 @@ jobs:
                           Distance = git rev-list --count "$($Matches[1])..HEAD" -- "$en_file"
                       })
                   }
-          
+                  Write-Host "r Untranslated List: $untranslated, Result Untranslated: $($result.untranslated), $($untranslated.GetType().FullName), $($result.untranslated.GetType().FullName)"
                   return @{
                       untranslated = $untranslated
                       badFrontMatter = $badFrontMatter
