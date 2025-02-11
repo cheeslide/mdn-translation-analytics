@@ -104,7 +104,7 @@ jobs:
                   $completedJobs | ForEach-Object {
                       Write-Host $_.State
           
-                      $result = Receive-Job -Job $_ -Wait
+                      $result = $(Receive-Job -Job $_ -Wait)
                       Merge-Result $result
                       Remove-Job -Job $_
                       $jobs.Remove($_)
