@@ -70,6 +70,8 @@ jobs:
           $commitDistances = New-Object System.Collections.Generic.List[PSObject]
           
           function Merge-Result($result) {
+              Write-Host "3 Untranslated type: $($result.untranslated.GetType().FullName), BadFrontMatter type: $($result.badFrontMatter.GetType().FullName), CommitDistances type: $($result.commitDistances.GetType().FullName)"
+
               $untranslated.AddRange($result.untranslated)
               $badFrontMatter.AddRange($result.badFrontMatter)
               $commitDistances.AddRange($result.commitDistances)
@@ -102,14 +104,15 @@ jobs:
                   # 检查是否有任务完成，如果有则移除
                   $completedJobs = $jobs | Where-Object { $_.State -eq 'Completed' }
                   $completedJobs | ForEach-Object {
-                      Write-Host "t Untranslated type: $($result.untranslated.GetType().FullName), BadFrontMatter type: $($result.badFrontMatter.GetType().FullName), CommitDistances type: $($result.commitDistances.GetType().FullName)"
-
                       $result = $(Receive-Job -Job $_ -Wait)
+                      
+                      Write-Host "2 Untranslated type: $($result.untranslated.GetType().FullName), BadFrontMatter type: $($result.badFrontMatter.GetType().FullName), CommitDistances type: $($result.commitDistances.GetType().FullName)"
+                      
                       Merge-Result $result
                       Remove-Job -Job $_
                       $jobs.Remove($_)
           
-                      Write-Host "2 Untranslated List: $untranslated, Result Untranslated: $($result.untranslated), $($untranslated.GetType().FullName), $($result.untranslated.GetType().FullName)"
+                      Write-Host "2 Result Untranslated: $($result.untranslated)"
                   }
                   Start-Sleep -Seconds 1
               }
