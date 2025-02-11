@@ -99,6 +99,8 @@ jobs:
               while ((Get-Job).Count -ge $maxConcurrentJobs) {
                   # 检查是否有任务完成，如果有则移除
                   $completedJobs = Get-Job -State Completed
+                  Write-Host $completedJobs
+                  Write-Host $completedJobs.Count
                   $completedJobs | ForEach-Object {
                       $result = Receive-Job -Job $_ -Wait
                       Merge-Result $result
