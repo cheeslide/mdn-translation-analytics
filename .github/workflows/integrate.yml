@@ -90,22 +90,25 @@ jobs:
               }
           }
           
+          $jobs = New-Object System.Collections.Generic.List[System.Management.Automation.Job]
+          
           write-host "Total tasks: $($tasks.Count)"
           write-host "Start processing..."
           
           # 循环并启动任务
           while ($tasks.Count) {
               # 等待直到后台任务数量少于最大并发数
-              while ((Get-Job).Count -ge $maxConcurrentJobs) {
+              while ($jobs.Count -ge $maxConcurrentJobs) {
                   # 检查是否有任务完成，如果有则移除
-                  $completedJobs = Get-Job -State Completed
-                  Write-Host $completedJobs
-                  Write-Host $completedJobs.Count
+                  $completedJobs = $jobs | Where-Object { $_.State -eq 'Completed' }
                   $completedJobs | ForEach-Object {
                       Write-Host $_.State
+          
                       $result = Receive-Job -Job $_ -Wait
                       Merge-Result $result
                       Remove-Job -Job $_
+                      $jobs.Remove($_)
+          
                       Write-Host "2 Untranslated List: $untranslated, Result Untranslated: $($result.untranslated), $($untranslated.GetType().FullName), $($result.untranslated.GetType().FullName)"
                   }
                   Start-Sleep -Seconds 1
@@ -149,15 +152,18 @@ jobs:
                       commitDistances = $commitDistances
                   }
               }
+              $jobs.Add($job)
+          
               write-host "tasks left: $($tasks.Count)"
           }
           
           write-host "All jobs started, waiting for completion..."
           
           # 等待所有任务完成并获取结果
-          Get-Job | ForEach-Object {
+          $jobs | ForEach-Object {
               Merge-Result(Receive-Job -Job $_ -Wait)
               Remove-Job -Job $_
+              $jobs.Remove($_)
           }
           
           $commitDistances.ToArray() | Export-Csv -Path ${{ env.file_distances_name }} -NoTypeInformation
