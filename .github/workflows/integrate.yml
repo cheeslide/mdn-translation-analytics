@@ -39,7 +39,22 @@ jobs:
           path: content
           fetch-depth: 0
 
+      
+
       - name: check last commit date
+        run: |
+          $logFile = "md_logs.txt"
+          $targetFiles = "current_files.txt"
+          $env:GIT_DIR = ".\translated-content\.git"
+          $env:GIT_WORK_TREE = ".\translated-content"
+          
+          git log --format=%ad --date=short --name-only | Out-File -FilePath $logFile -Encoding ascii
+          git ls-files *.md | Out-File -FilePath $targetFiles -Encoding ascii
+          python get_last_commit_dates.py $logFile ${{env.file_last_date_name}} $targetFiles
+          rm $logFile
+          rm $targetFiles
+          
+      - name: check sourceCommit and untranslated
         run: |
           $maxConcurrentJobs = 16
           $maxPackCapacity = 4
@@ -85,19 +100,13 @@ jobs:
                   # 检查是否有任务完成，如果有则移除
                   $completedJobs = Get-Job -State Completed
                   $completedJobs | ForEach-Object {
-                      try {
-                          # 确保接收任务结果并移除任务
-                          $result = Receive-Job -Job $_ -Wait
-                          Merge-Result $result
-                          Remove-Job -Job $_
-                      }
-                      catch {
-                          Write-Host "Untranslated List: $untranslated"
-                          Write-Host "Result Untranslated: $($result.untranslated)"
-                          Write-Host $untranslated.GetType().FullName
-                          Write-Host $result.untranslated.GetType().FullName
-                          Write-Error "处理任务时出错: $_"
-                      }
+                      $result = Receive-Job -Job $_ -Wait
+                      Merge-Result $result
+                      Remove-Job -Job $_
+                      Write-Host "Untranslated List: $untranslated"
+                      Write-Host "Result Untranslated: $($result.untranslated)"
+                      Write-Host $untranslated.GetType().FullName
+                      Write-Host $result.untranslated.GetType().FullName
                   }
                   Start-Sleep -Seconds 1
               }
