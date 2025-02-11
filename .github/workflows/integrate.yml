@@ -142,10 +142,9 @@ jobs:
                       }
                       $commitDistances.add([PSCustomObject]@{
                           File = $relative_path
-                          Distance = git rev-list --count "$($Matches[1])..HEAD" -- "$en_file"
+                          Distance = $(git rev-list --count "$($Matches[1])..HEAD" -- "$en_file")
                       })
                   }
-                  Write-Host "r Untranslated List: $untranslated, Result Untranslated: $($result.untranslated), $($untranslated.GetType().FullName), $($result.untranslated.GetType().FullName)"
                   return @{
                       untranslated = $untranslated
                       badFrontMatter = $badFrontMatter
