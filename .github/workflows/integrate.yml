@@ -41,68 +41,101 @@ jobs:
 
       - name: check last commit date
         run: |
-          $logFile = "md_logs.txt"
-          $targetFiles = "current_files.txt"
-          $env:GIT_DIR = ".\translated-content\.git"
-          $env:GIT_WORK_TREE = ".\translated-content"
+          $maxConcurrentJobs = 16
+          $maxPackCapacity = 20
           
-          git log --format=%ad --date=short --name-only | Out-File -FilePath $logFile -Encoding ascii
-          git ls-files *.md | Out-File -FilePath $targetFiles -Encoding ascii
-          python get_last_commit_dates.py $logFile ${{env.file_last_date_name}} $targetFiles
-          rm $logFile
-          rm $targetFiles
-
-      - name: check sourceCommit and untranslated
-        run: |
           $languages = "es", "fr", "ja", "ko", "pt-br", "ru", "zh-cn", "zh-tw"
           $env:GIT_DIR = ".\content\.git"
           $env:GIT_WORK_TREE = ".\content"
           $en_folder = (Resolve-Path -Path "content\files\en-us").Path
           $translation_mu = (Resolve-Path -Path "translated-content\files\").Path
           
-          $languages | ForEach-Object {
-              $x = Join-Path -Path $translation_mu -ChildPath $_
-              if (!(Test-Path -Path  $x)) {
-                  throw "path error: language code. Announced $languages, but $x is not found."
+          $untranslated = New-Object System.Collections.Generic.List[String]
+          $badFrontMatter = New-Object System.Collections.Generic.List[String]
+          $commitDistances = New-Object System.Collections.Generic.List[PSObject]
+          
+          function Merge-Result($result) {
+              $untranslated.AddRange($result.untranslated)
+              $badFrontMatter.AddRange($result.badFrontMatter)
+              $commitDistances.AddRange($result.commitDistances)
+              return $true
+          }
+          
+          $en_files = Get-ChildItem -Path $en_folder -Recurse -File -Filter "*.md" | `
+          Select-Object -ExpandProperty FullName |`
+          ForEach-Object {
+              [System.IO.Path]::GetRelativePath($en_folder, $_)
+          }
+          
+          # tasks是translation_files的相对路径
+          $tasks = New-Object System.Collections.Generic.List[String]
+          foreach($en_file in $en_files) {
+              foreach($lang in $languages) {
+                  $tasks.add("$lang\$en_file")
               }
           }
           
-          $commitDistances = [System.Collections.Generic.List[PSObject]]::new()
-          $badFrontMatter = [System.Collections.Generic.List[String]]::new()
-          $untranslated = [System.Collections.Generic.List[String]]::new()
-          
-          $en_files = Get-ChildItem -Path $en_folder -Recurse -File -Filter "*.md" | `
-          Select-Object -ExpandProperty FullName
-          
-          foreach($lang in $languages) {
-              write-host "Starting $lang"
-              ForEach($en_file in $en_files){
-                  $relative_path = [System.IO.Path]::GetRelativePath($en_folder, $en_file)
-                  $translation_file = Join-Path -Path $translation_mu -ChildPath "$lang\$relative_path"
-                  
-                  if (!(Test-Path -Path $translation_file)) {
-                      $untranslated.add("$lang\$relative_path")
-                      continue
+          # 循环并启动任务
+          while ($tasks.Count) {
+              # 等待直到后台任务数量少于最大并发数
+              while ((Get-Job).Count -ge $maxConcurrentJobs) {
+                  Start-Sleep -Seconds 0.3
+                  # 检查是否有任务完成，如果有则移除
+                  $completedJobs = Get-Job -State Completed
+                  $completedJobs | ForEach-Object {
+                      # 移除已完成的任务
+                      Merge-Result(Receive-Job -Job $_ -Wait)
+                      Remove-Job -Job $_
                   }
-                  
-                  $file_start = -join (Get-Content -Path $translation_file -TotalCount 6)
-                  if (!($file_start -match "\s{1,}sourceCommit:\s?([0-9a-f]{40})")) {
-                      $badFrontMatter.add("$lang\$relative_path")
-                      continue
-                  }
-                  $commitDistances.add([PSCustomObject]@{
-                      File = "$lang\$relative_path"
-                      Distance = git rev-list --count "$($Matches[1])..HEAD" -- "$en_file"
-                  })
-          
               }
-              write-host "Finished $lang"
-              write-host "$($commitDistances.Count) files have sourceCommit, badFrontMatter $($badFrontMatter.Count), untranslated $($untranslated.Count)"
+              
+              # 开始创建新job
+              $packCapacity = [math]::Min($maxPackCapacity, $tasks.Count)
+              $taskPack = $tasks[0..($packCapacity - 1)]
+              $tasks.RemoveRange(0, $packCapacity)
+              
+              $job = Start-Job -ArgumentList $taskPack, $en_folder, $translation_mu -ScriptBlock {
+                  param($taskPack, $en_folder, $translation_mu)
+                  $untranslated = New-Object System.Collections.Generic.List[String]
+                  $badFrontMatter = New-Object System.Collections.Generic.List[String]
+                  $commitDistances = New-Object System.Collections.Generic.List[PSObject]
+                  
+                  foreach ($relative_path in $taskPack) {
+                      $translation_file = Join-Path -Path $translation_mu -ChildPath $relative_path
+                      if (!(Test-Path -Path $translation_file)) {
+                          $untranslated.add($relative_path)
+                          continue
+                      }
+                      
+                      $file_start = -join (Get-Content -Path $relative_path -TotalCount 6)
+                      if (!($file_start -match "\s{1,}sourceCommit:\s?([0-9a-f]{40})")) {
+                          $badFrontMatter.add($relative_path)
+                          continue
+                      }
+                      $commitDistances.add([PSCustomObject]@{
+                          File = $relative_path
+                          Distance = git rev-list --count "$($Matches[1])..HEAD" -- "$en_file"
+                      })
+                  }
+          
+                  return @{
+                      untranslated = $untranslated
+                      badFrontMatter = $badFrontMatter
+                      commitDistances = $commitDistances
+                  }
+              }
+          }
+          
+          # 等待所有任务完成并获取结果
+          Get-Job | ForEach-Object {
+              Merge-Result(Receive-Job -Job $_ -Wait)
+              Remove-Job -Job $_
           }
           
           $commitDistances.ToArray() | Export-Csv -Path ${{ env.file_distances_name }} -NoTypeInformation
           $badFrontMatter | Out-File -FilePath ${{ env.file_no_sourceCommit_name }} -Encoding ascii
-          $untranslated | Export-Csv -Path ${{ env.file_untranslated_name }} -NoTypeInformation
+          $untranslated | Out-File -FilePath ${{ env.file_untranslated_name }} -Encoding ascii
+
     
       - name: integrate
         run: |
