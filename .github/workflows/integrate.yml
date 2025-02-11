@@ -135,10 +135,14 @@ jobs:
                           $badFrontMatter.add($relative_path)
                           continue
                       }
-                      $commitDistances.add([PSCustomObject]@{
-                          File = $relative_path
-                          Distance = $(git rev-list --count "$($Matches[1])..HEAD" -- "$en_file")
-                      })
+                      Try {
+                          $commitDistances.add([PSCustomObject]@{
+                              File = $relative_path
+                              Distance = $(git rev-list --count "$($Matches[1])..HEAD" -- "$en_file")
+                          })
+                      } Catch {
+                          Write-Host "捕获到错误: $_"
+                      }
                   }
                   return @{
                       untranslated = $untranslated
