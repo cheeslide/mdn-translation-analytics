@@ -42,7 +42,7 @@ jobs:
       - name: check last commit date
         run: |
           $maxConcurrentJobs = 16
-          $maxPackCapacity = 400
+          $maxPackCapacity = 4
           
           $languages = "es", "fr", "ja", "ko", "pt-br", "ru", "zh-cn", "zh-tw"
           $env:GIT_DIR = ".\content\.git"
