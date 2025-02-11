@@ -102,8 +102,8 @@ jobs:
                   # 检查是否有任务完成，如果有则移除
                   $completedJobs = $jobs | Where-Object { $_.State -eq 'Completed' }
                   $completedJobs | ForEach-Object {
-                      Write-Host $_.State
-          
+                      Write-Host $($_ -ne $null)
+                      
                       $result = $(Receive-Job -Job $_ -Wait)
                       Merge-Result $result
                       Remove-Job -Job $_
