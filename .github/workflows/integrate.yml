@@ -107,7 +107,7 @@ jobs:
                           continue
                       }
                       
-                      $file_start = -join (Get-Content -Path $relative_path -TotalCount 6)
+                      $file_start = -join (Get-Content -Path $translation_file -TotalCount 6)
                       if (!($file_start -match "\s{1,}sourceCommit:\s?([0-9a-f]{40})")) {
                           $badFrontMatter.add($relative_path)
                           continue
