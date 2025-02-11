@@ -92,11 +92,11 @@ jobs:
                           Remove-Job -Job $_
                       }
                       catch {
-                          Write-Error "处理任务时出错: $_"
                           Write-Host "Untranslated List: $untranslated"
                           Write-Host "Result Untranslated: $($result.untranslated)"
                           Write-Host $untranslated.GetType().FullName
                           Write-Host $result.untranslated.GetType().FullName
+                          Write-Error "处理任务时出错: $_"
                       }
                   }
                   Start-Sleep -Seconds 1
