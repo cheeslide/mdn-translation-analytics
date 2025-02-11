@@ -73,7 +73,7 @@ jobs:
               $untranslated.AddRange($result.untranslated)
               $badFrontMatter.AddRange($result.badFrontMatter)
               $commitDistances.AddRange($result.commitDistances)
-              return $true
+              return $null
           }
           
           $en_files = Get-ChildItem -Path $en_folder -Recurse -File -Filter "*.md" | `
