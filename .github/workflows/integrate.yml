@@ -65,9 +65,9 @@ jobs:
           $en_folder = (Resolve-Path -Path "content\files\en-us").Path
           $translation_mu = (Resolve-Path -Path "translated-content\files\").Path
           
-          $untranslated = New-Object System.Collections.Generic.List[String]
-          $badFrontMatter = New-Object System.Collections.Generic.List[String]
-          $commitDistances = New-Object System.Collections.Generic.List[PSObject]
+          $untranslated = New-Object System.Collections.ArrayList
+          $badFrontMatter = New-Object System.Collections.ArrayList
+          $commitDistances = New-Object System.Collections.ArrayList
           
           function Merge-Result($result) {
               Write-Host "3 Untranslated type: $($result.untranslated.GetType().FullName), BadFrontMatter type: $($result.badFrontMatter.GetType().FullName), CommitDistances type: $($result.commitDistances.GetType().FullName)"
