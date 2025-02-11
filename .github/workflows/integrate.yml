@@ -52,75 +52,57 @@ jobs:
           rm $logFile
           rm $targetFiles
 
-      - name: check untranslated
+      - name: check sourceCommit and untranslated
         run: |
           $languages = "es", "fr", "ja", "ko", "pt-br", "ru", "zh-cn", "zh-tw"
-          $en_folder = (Resolve-Path -Path "content\files\en-us").Path
-          $translation_mu = (Resolve-Path -Path "translated-content\files\$lang").Path
-
-          $translation_si_list = $languages | ForEach-Object {
-              $x = Join-Path -Path $translation_mu -ChildPath $_
-              if (!(Test-Path -Path $x)) { throw "path error: language code. `n $languages `n $x `n" }
-              $x
-          }
-          
-          Get-ChildItem -Path $en_folder -Recurse -File -Filter "*.md" | `
-          Select-Object -ExpandProperty FullName | `
-          ForEach-Object {
-              foreach( $translation_si in $translation_si_list ) {
-                  $relative_path = [System.IO.Path]::GetRelativePath($en_folder, $_)
-                  $translation_file = Join-Path -Path $translation_si -ChildPath $relative_path
-                  
-                  if (!(Test-Path -Path $translation_file)) {
-                      [System.IO.Path]::GetRelativePath($translation_mu, $translation_file)
-                  }
-              }
-          } | Out-File -FilePath "${{ env.file_untranslated_name }}" -Encoding ascii
-
-      - name: check sourceCommit
-        run: |
           $env:GIT_DIR = ".\content\.git"
           $env:GIT_WORK_TREE = ".\content"
-          $languages = "es", "fr", "ja", "ko", "pt-br", "ru", "zh-cn", "zh-tw"
-          
           $en_folder = (Resolve-Path -Path "content\files\en-us").Path
           $translation_mu = (Resolve-Path -Path "translated-content\files\").Path
           
           $languages | ForEach-Object {
               $x = Join-Path -Path $translation_mu -ChildPath $_
               if (!(Test-Path -Path  $x)) {
-                  throw "path error: language code. Anncounced $languages, but $x is not found."
+                  throw "path error: language code. Announced $languages, but $x is not found."
               }
           }
           
           $commitDistances = [System.Collections.Generic.List[PSObject]]::new()
           $badFrontMatter = [System.Collections.Generic.List[String]]::new()
+          $untranslated = [System.Collections.Generic.List[String]]::new()
           
-          foreach ($lang in $languages) {
+          $en_files = Get-ChildItem -Path $en_folder -Recurse -File -Filter "*.md" | `
+          Select-Object -ExpandProperty FullName
+          
+          foreach($lang in $languages) {
               write-host "Starting $lang"
-              $translation_folder = (Resolve-Path -Path "translated-content\files\$lang").Path
-              $files = Get-ChildItem -Path $translation_folder -Recurse -File -Filter "*.md"|`
-                  Select-Object -ExpandProperty FullName
-              write-host "Found $($files.Count) files in $lang"
-              ForEach ($file in $files) {
-                  $file_start = -join (Get-Content -Path $file -TotalCount 6)
-                  $relative_path = [System.IO.Path]::GetRelativePath($translation_folder, $file)
-                  if ($file_start -match "\s{1,}sourceCommit:\s?([0-9a-f]{40})") {
-                      $en_file = Join-Path -Path $en_folder -ChildPath $relative_path
-                      $commitDistances.add([PSCustomObject]@{
-                          File = "$lang\$relative_path"
-                          Distance = git rev-list --count "$($Matches[1])..HEAD" -- $en_file
-                      })
-                  } else {
-                      $badFrontMatter.add("$lang\$relative_path")
+              ForEach($en_file in $en_files){
+                  $relative_path = [System.IO.Path]::GetRelativePath($en_folder, $en_file)
+                  $translation_file = Join-Path -Path $translation_mu -ChildPath "$lang\$relative_path"
+                  
+                  if (!(Test-Path -Path $translation_file)) {
+                      $untranslated.add("$lang\$relative_path")
+                      continue
                   }
+                  
+                  $file_start = -join (Get-Content -Path $translation_file -TotalCount 6)
+                  if (!($file_start -match "\s{1,}sourceCommit:\s?([0-9a-f]{40})")) {
+                      $badFrontMatter.add("$lang\$relative_path")
+                      continue
+                  }
+                  $commitDistances.add([PSCustomObject]@{
+                      File = "$lang\$relative_path"
+                      Distance = git rev-list --count "$($Matches[1])..HEAD" -- "$en_file"
+                  })
+          
               }
               write-host "Finished $lang"
-              write-host "$($commitDistances.Count) files have sourceCommit, $($badFrontMatter.Count) files do not have sourceCommit"
+              write-host "$($commitDistances.Count) files have sourceCommit, badFrontMatter $($badFrontMatter.Count), untranslated $($untranslated.Count)"
           }
           
           $commitDistances.ToArray() | Export-Csv -Path ${{ env.file_distances_name }} -NoTypeInformation
           $badFrontMatter | Out-File -FilePath ${{ env.file_no_sourceCommit_name }} -Encoding ascii
+          $untranslated | Export-Csv -Path ${{ env.file_untranslated_name }} -NoTypeInformation
     
       - name: integrate
         run: |
