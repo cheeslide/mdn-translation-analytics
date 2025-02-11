@@ -102,6 +102,7 @@ jobs:
                   Write-Host $completedJobs
                   Write-Host $completedJobs.Count
                   $completedJobs | ForEach-Object {
+                      Write-Host $_
                       $result = Receive-Job -Job $_ -Wait
                       Merge-Result $result
                       Remove-Job -Job $_
