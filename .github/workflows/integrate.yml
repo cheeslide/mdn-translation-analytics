@@ -105,7 +105,7 @@ jobs:
                       $result = $(Receive-Job -Job $_ -Wait)
                       Merge-Result $result
                       Remove-Job -Job $_
-                      $jobs.Remove($_)
+                      $jobs.Remove($_)  | Out-Null
                   }
                   Start-Sleep -Seconds 1
               }
