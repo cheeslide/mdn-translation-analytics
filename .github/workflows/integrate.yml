@@ -88,11 +88,15 @@ jobs:
                       try {
                           # 确保接收任务结果并移除任务
                           $result = Receive-Job -Job $_ -Wait
-                          Merge-Result $result   # 假设 Merge-Result 是一个已定义的函数
+                          Merge-Result $result
                           Remove-Job -Job $_
                       }
                       catch {
                           Write-Error "处理任务时出错: $_"
+                          Write-Host "Untranslated List: $untranslated"
+                          Write-Host "Result Untranslated: $($result.untranslated)"
+                          Write-Host $untranslated.GetType().FullName
+                          Write-Host $result.untranslated.GetType().FullName
                       }
                   }
                   Start-Sleep -Seconds 1
