@@ -97,7 +97,6 @@ jobs:
           while ($tasks.Count) {
               # 等待直到后台任务数量少于最大并发数
               while ($jobs.Count -ge $maxConcurrentJobs) {
-                  # 检查是否有任务完成，如果有则移除
                   $completedJobs = $jobs | Where-Object { $_.State -eq 'Completed' }
                   $completedJobs | ForEach-Object {
                       $result = $(Receive-Job -Job $_ -Wait)
@@ -154,18 +153,27 @@ jobs:
           }
           
           write-host "All jobs started, waiting for completion..."
-          
+
+          write-host $jobs.Count # DEBUG
           # 等待所有任务完成并获取结果
-          $jobs | ForEach-Object {
-              Merge-Result(Receive-Job -Job $_ -Wait)
-              Remove-Job -Job $_
-              $jobs.Remove($_) | Out-Null
+          while ($jobs.Count) {
+              $completedJobs = $jobs | Where-Object { $_.State -eq 'Completed' }
+              $completedJobs | ForEach-Object {
+                  write-host 12 # DEBUG
+                  $result = $(Receive-Job -Job $_ -Wait)
+                  Merge-Result $result
+                  Remove-Job -Job $_
+                  $jobs.Remove($_) | Out-Null
+                  write-host 13 # DEBUG
+              }
+              Start-Sleep -Seconds 1
           }
-          write-host 1
+          
+          write-host 1 # DEBUG
           $commitDistances.ToArray() | Export-Csv -Path ${{ env.file_distances_name }} -NoTypeInformation
-          write-host 2
+          write-host 2 # DEBUG
           $badFrontMatter | Out-File -FilePath ${{ env.file_no_sourceCommit_name }} -Encoding ascii
-          write-host 3
+          write-host 3 # DEBUG
           $untranslated | Out-File -FilePath ${{ env.file_untranslated_name }} -Encoding ascii
 
           write-host "completed succesfully, commitDistances $($commitDistances.Count), badFrontMatter $($badFrontMatter.Count), untranslated $($untranslated.Count)"
