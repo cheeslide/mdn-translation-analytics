@@ -2,7 +2,7 @@ name: integrate 4 files
 
 on:
   schedule:
-    - cron: "42 22 * * 2,6"
+    - cron: "42 8 * * *"
   workflow_dispatch:
 
 env:
@@ -186,6 +186,7 @@ jobs:
         with:
           name: output
           path: "output"
+          retention-days: 7
 
       - name: Output artifact ID
         run: |
