@@ -105,7 +105,7 @@ jobs:
                       $result = $(Receive-Job -Job $_ -Wait)
                       Merge-Result $result
                       Remove-Job -Job $_
-                      $jobs.Remove($_)  | Out-Null
+                      $jobs.Remove($_) | Out-Null
                   }
                   Start-Sleep -Seconds 1
               }
@@ -162,12 +162,14 @@ jobs:
           $jobs | ForEach-Object {
               Merge-Result(Receive-Job -Job $_ -Wait)
               Remove-Job -Job $_
-              $jobs.Remove($_)
+              $jobs.Remove($_) | Out-Null
           }
           
           $commitDistances.ToArray() | Export-Csv -Path ${{ env.file_distances_name }} -NoTypeInformation
           $badFrontMatter | Out-File -FilePath ${{ env.file_no_sourceCommit_name }} -Encoding ascii
           $untranslated | Out-File -FilePath ${{ env.file_untranslated_name }} -Encoding ascii
+
+          write-host "completed succesfully, commitDistances $($commitDistances.Count), badFrontMatter $($badFrontMatter.Count), untranslated $($untranslated.Count)"
 
     
       - name: integrate
