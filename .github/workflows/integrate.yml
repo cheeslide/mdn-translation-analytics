@@ -55,7 +55,7 @@ jobs:
       - name: check sourceCommit and untranslated
         run: |
           $maxConcurrentJobs = 32
-          $maxPackCapacity = 2000
+          $maxPackCapacity = 500
           
           $languages = "es", "fr", "ja", "ko", "pt-br", "ru", "zh-cn", "zh-tw"
           $env:GIT_DIR = ".\content\.git"
@@ -74,19 +74,21 @@ jobs:
               return $null
           }
           
-          $en_files = Get-ChildItem -Path $en_folder -Recurse -File -Filter "*.md" | `
+          $relative_path = Get-ChildItem -Path $en_folder -Recurse -File -Filter "*.md" | `
           Select-Object -ExpandProperty FullName |`
           ForEach-Object {
               [System.IO.Path]::GetRelativePath($en_folder, $_)
           }
           
           # tasks是translation_files的相对路径
-          $tasks = New-Object System.Collections.Generic.List[String]
-          foreach($en_file in $en_files) {
-              foreach($lang in $languages) {
-                  $tasks.add("$lang\$en_file")
-              }
-          }
+          # $tasks = New-Object System.Collections.Generic.List[String]
+          # foreach($en_file in $en_files) {
+          #     foreach($lang in $languages) {
+          #         $tasks.add("$lang\$en_file")
+          #     }
+          # }
+          
+          $tasks = $relative_path
           
           $jobs = New-Object System.Collections.Generic.List[System.Management.Automation.Job]
           
@@ -112,34 +114,36 @@ jobs:
               $taskPack = $tasks[0..($packCapacity - 1)]
               $tasks.RemoveRange(0, $packCapacity)
               
-              $job = Start-Job -ArgumentList $taskPack, $en_folder, $translation_mu -ScriptBlock {
-                  param($taskPack, $en_folder, $translation_mu)
+              $job = Start-Job -ArgumentList $taskPack, $en_folder, $translation_mu, $languages -ScriptBlock {
+                  param($taskPack, $en_folder, $translation_mu, $languages)
                   $untranslated = New-Object System.Collections.Generic.List[String]
                   $badFrontMatter = New-Object System.Collections.Generic.List[String]
                   $commitDistances = New-Object System.Collections.Generic.List[PSObject]
                   
                   foreach ($relative_path in $taskPack) {
-                      $translation_file = Join-Path -Path $translation_mu -ChildPath $relative_path
                       $en_file = Join-Path -Path $en_folder -ChildPath $relative_path
+                      foreach ($lang in $languages) {
+                          $translation_file = Join-Path -Path $translation_mu -ChildPath "$lang\$relative_path"
+                          if (!(Test-Path -Path $translation_file)) {
+                              $untranslated.add($relative_path)
+                              continue
+                          }
+                          $file_start = -join (Get-Content -Path $translation_file -TotalCount 6)
+                          if (!($file_start -match "\s{1,}sourceCommit:\s?([0-9a-f]{40})")) {
+                              $badFrontMatter.add($relative_path)
+                              continue
+                          }
+                          $distance = git rev-list --count "$($Matches[1])..HEAD" -- "$en_file" 2>$null
+                          if ($LASTEXITCODE -ne 0) {
+                              write-host "error $($Matches[1])  $translation_file"
+                              $distance = -1
+                          }
           
-                      if (!(Test-Path -Path $translation_file)) {
-                          $untranslated.add($relative_path)
-                          continue
+                          $commitDistances.add([PSCustomObject]@{
+                              File = $relative_path
+                              Distance = $distance
+                          })
                       }
-                      
-                      $file_start = -join (Get-Content -Path $translation_file -TotalCount 6)
-                      if (!($file_start -match "\s{1,}sourceCommit:\s?([0-9a-f]{40})")) {
-                          $badFrontMatter.add($relative_path)
-                          continue
-                      }
-                      $distance = git rev-list --count "$($Matches[1])..HEAD" -- "$translation_file" 2>$null
-                      if ($LASTEXITCODE -ne 0) {
-                          write-host "error $($Matches[1])  $translation_file"
-                      }
-                      $commitDistances.add([PSCustomObject]@{
-                          File = $relative_path
-                          Distance = $distance
-                      })
                   }
                   return @{
                       untranslated = $untranslated
@@ -170,10 +174,8 @@ jobs:
           $commitDistances.ToArray() | Export-Csv -Path ${{ env.file_distances_name }} -NoTypeInformation
           $badFrontMatter | Out-File -FilePath ${{ env.file_no_sourceCommit_name }} -Encoding ascii
           $untranslated | Out-File -FilePath ${{ env.file_untranslated_name }} -Encoding ascii
-
+          
           write-host "completed succesfully, commitDistances $($commitDistances.Count), badFrontMatter $($badFrontMatter.Count), untranslated $($untranslated.Count)"
-          exit 0
-
     
       - name: integrate
         run: |
