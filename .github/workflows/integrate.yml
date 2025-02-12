@@ -73,7 +73,7 @@ jobs:
               $commitDistances.AddRange($result.commitDistances)
               return $null
           }
-
+          
           $tasks = New-Object System.Collections.Generic.List[String]
           Get-ChildItem -Path $en_folder -Recurse -File -Filter "*.md" | `
           Select-Object -ExpandProperty FullName |`
@@ -124,15 +124,19 @@ jobs:
                               $badFrontMatter.add("$lang\$relative_path")
                               continue
                           }
-                          $distance = git rev-list --count "$($Matches[1])..HEAD" -- "$en_file" 2>$null
+                          $hash = $Matches[1]
+                          $distance = git rev-list --count "$hash..HEAD" -- "$en_file" 2>$null
                           if ($LASTEXITCODE -ne 0) {
-                              write-host "error $($Matches[1])  $translation_file"
+                              write-host "error  $hash  $translation_file"
                               $distance = -1
+                          } else {
+                              $diff = git diff --minimal --shortstat "$hash..HEAD" -- "$en_file"  2>$null
                           }
           
                           $commitDistances.add([PSCustomObject]@{
                               File = "$lang\$relative_path"
                               Distance = $distance
+                              Diff = $diff
                           })
                       }
                   }
@@ -188,7 +192,8 @@ jobs:
           echo ${{ steps.artifact-upload.outputs.artifact-url }} > URL.txt
           gc URL.txt
       
-      - name: publish
+      - if: github.ref_name == 'main'
+        name: publish
         uses: ./.github/actions/publish
         with:
           filename: URL.txt
