@@ -170,6 +170,7 @@ jobs:
           $untranslated | Out-File -FilePath ${{ env.file_untranslated_name }} -Encoding ascii
 
           write-host "completed succesfully, commitDistances $($commitDistances.Count), badFrontMatter $($badFrontMatter.Count), untranslated $($untranslated.Count)"
+          exit 0
 
     
       - name: integrate
