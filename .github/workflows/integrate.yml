@@ -39,8 +39,6 @@ jobs:
           path: content
           fetch-depth: 0
 
-      
-
       - name: check last commit date
         run: |
           $logFile = "md_logs.txt"
@@ -163,9 +161,11 @@ jobs:
               Remove-Job -Job $_
               $jobs.Remove($_) | Out-Null
           }
-          
+          write-host 1
           $commitDistances.ToArray() | Export-Csv -Path ${{ env.file_distances_name }} -NoTypeInformation
+          write-host 2
           $badFrontMatter | Out-File -FilePath ${{ env.file_no_sourceCommit_name }} -Encoding ascii
+          write-host 3
           $untranslated | Out-File -FilePath ${{ env.file_untranslated_name }} -Encoding ascii
 
           write-host "completed succesfully, commitDistances $($commitDistances.Count), badFrontMatter $($badFrontMatter.Count), untranslated $($untranslated.Count)"
