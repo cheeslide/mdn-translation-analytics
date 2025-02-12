@@ -54,8 +54,8 @@ jobs:
           
       - name: check sourceCommit and untranslated
         run: |
-          $maxConcurrentJobs = 16
-          $maxPackCapacity = 4000
+          $maxConcurrentJobs = 32
+          $maxPackCapacity = 2000
           
           $languages = "es", "fr", "ja", "ko", "pt-br", "ru", "zh-cn", "zh-tw"
           $env:GIT_DIR = ".\content\.git"
@@ -153,27 +153,22 @@ jobs:
           }
           
           write-host "All jobs started, waiting for completion..."
-
-          write-host $jobs.Count # DEBUG
+          write-host "job left $($jobs.Count)"
+          
           # 等待所有任务完成并获取结果
           while ($jobs.Count) {
               $completedJobs = $jobs | Where-Object { $_.State -eq 'Completed' }
               $completedJobs | ForEach-Object {
-                  write-host 12 # DEBUG
                   $result = $(Receive-Job -Job $_ -Wait)
                   Merge-Result $result
                   Remove-Job -Job $_
                   $jobs.Remove($_) | Out-Null
-                  write-host 13 # DEBUG
               }
               Start-Sleep -Seconds 1
           }
           
-          write-host 1 # DEBUG
           $commitDistances.ToArray() | Export-Csv -Path ${{ env.file_distances_name }} -NoTypeInformation
-          write-host 2 # DEBUG
           $badFrontMatter | Out-File -FilePath ${{ env.file_no_sourceCommit_name }} -Encoding ascii
-          write-host 3 # DEBUG
           $untranslated | Out-File -FilePath ${{ env.file_untranslated_name }} -Encoding ascii
 
           write-host "completed succesfully, commitDistances $($commitDistances.Count), badFrontMatter $($badFrontMatter.Count), untranslated $($untranslated.Count)"
