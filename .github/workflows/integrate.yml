@@ -132,7 +132,7 @@ jobs:
                           $badFrontMatter.add($relative_path)
                           continue
                       }
-                      $d = git rev-list --count "$($Matches[1])..HEAD" -- "$en_file" 2>&1
+                      $d = git rev-list --count "$($Matches[1])..HEAD" -- "$en_file"
                       if ($LASTEXITCODE -ne 0) {
                           write-host "error $($Matches[1])  $translation_file"
                       }
