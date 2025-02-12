@@ -129,7 +129,8 @@ jobs:
                           if ($LASTEXITCODE -ne 0) {
                               write-host "error  $hash  $translation_file"
                               $distance = -1
-                          } else {
+                          }
+                          if ($distance -gt 0){
                               $diff = git diff --minimal --shortstat "$hash..HEAD" -- "$en_file"  2>$null
                           }
           
