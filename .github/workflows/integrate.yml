@@ -75,13 +75,12 @@ jobs:
           }
 
           $tasks = New-Object System.Collections.Generic.List[String]
-          $tasks.AddRange(
-              Get-ChildItem -Path $en_folder -Recurse -File -Filter "*.md" | `
-              Select-Object -ExpandProperty FullName |`
-              ForEach-Object {
-                  [System.IO.Path]::GetRelativePath($en_folder, $_)
-              }
-          )
+          $reletive = Get-ChildItem -Path $en_folder -Recurse -File -Filter "*.md" | `
+          Select-Object -ExpandProperty FullName |`
+          ForEach-Object {
+              [System.IO.Path]::GetRelativePath($en_folder, $_)
+          }
+          $tasks.AddRange($reletive)
           
           $jobs = New-Object System.Collections.Generic.List[System.Management.Automation.Job]
           
