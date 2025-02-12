@@ -73,22 +73,13 @@ jobs:
               $commitDistances.AddRange($result.commitDistances)
               return $null
           }
-          
-          $relative_path = Get-ChildItem -Path $en_folder -Recurse -File -Filter "*.md" | `
+
+          $tasks = New-Object System.Collections.Generic.List[String]
+          Get-ChildItem -Path $en_folder -Recurse -File -Filter "*.md" | `
           Select-Object -ExpandProperty FullName |`
           ForEach-Object {
-              [System.IO.Path]::GetRelativePath($en_folder, $_)
+              $tasks.add( [System.IO.Path]::GetRelativePath($en_folder, $_) ）
           }
-          
-          # tasks是translation_files的相对路径
-          # $tasks = New-Object System.Collections.Generic.List[String]
-          # foreach($en_file in $en_files) {
-          #     foreach($lang in $languages) {
-          #         $tasks.add("$lang\$en_file")
-          #     }
-          # }
-          
-          $tasks = $relative_path
           
           $jobs = New-Object System.Collections.Generic.List[System.Management.Automation.Job]
           
@@ -125,12 +116,12 @@ jobs:
                       foreach ($lang in $languages) {
                           $translation_file = Join-Path -Path $translation_mu -ChildPath "$lang\$relative_path"
                           if (!(Test-Path -Path $translation_file)) {
-                              $untranslated.add($relative_path)
+                              $untranslated.add("$lang\$relative_path")
                               continue
                           }
                           $file_start = -join (Get-Content -Path $translation_file -TotalCount 6)
                           if (!($file_start -match "\s{1,}sourceCommit:\s?([0-9a-f]{40})")) {
-                              $badFrontMatter.add($relative_path)
+                              $badFrontMatter.add("$lang\$relative_path")
                               continue
                           }
                           $distance = git rev-list --count "$($Matches[1])..HEAD" -- "$en_file" 2>$null
@@ -140,7 +131,7 @@ jobs:
                           }
           
                           $commitDistances.add([PSCustomObject]@{
-                              File = $relative_path
+                              File = "$lang\$relative_path"
                               Distance = $distance
                           })
                       }
